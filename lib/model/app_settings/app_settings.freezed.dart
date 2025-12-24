@@ -21,7 +21,10 @@ mixin _$AppSettings {
  bool get trustInsecureCert;/// 启动时自动检查更新
  bool get autoCheckUpdate;/// 是否已经显示过手动上传提示对话框
 /// 用户点击"我知道了"后设为 true，后续不再显示
- bool get manualUploadDialogShown;
+ bool get manualUploadDialogShown;/// 被忽略的更新版本号
+/// 用户点击"忽略该版本"后设置，该版本将不再提示更新
+/// 当有新版本发布时，会自动清除该设置
+ String? get ignoredVersion;
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,16 +37,16 @@ $AppSettingsCopyWith<AppSettings> get copyWith => _$AppSettingsCopyWithImpl<AppS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown);
+int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,ignoredVersion);
 
 @override
 String toString() {
-  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown)';
+  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, ignoredVersion: $ignoredVersion)';
 }
 
 
@@ -54,7 +57,7 @@ abstract mixin class $AppSettingsCopyWith<$Res>  {
   factory $AppSettingsCopyWith(AppSettings value, $Res Function(AppSettings) _then) = _$AppSettingsCopyWithImpl;
 @useResult
 $Res call({
- bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown
+ bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String? ignoredVersion
 });
 
 
@@ -71,12 +74,13 @@ class _$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? ignoredVersion = freezed,}) {
   return _then(_self.copyWith(
 trustInsecureCert: null == trustInsecureCert ? _self.trustInsecureCert : trustInsecureCert // ignore: cast_nullable_to_non_nullable
 as bool,autoCheckUpdate: null == autoCheckUpdate ? _self.autoCheckUpdate : autoCheckUpdate // ignore: cast_nullable_to_non_nullable
 as bool,manualUploadDialogShown: null == manualUploadDialogShown ? _self.manualUploadDialogShown : manualUploadDialogShown // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,ignoredVersion: freezed == ignoredVersion ? _self.ignoredVersion : ignoredVersion // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -161,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String? ignoredVersion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.ignoredVersion);case _:
   return orElse();
 
 }
@@ -182,10 +186,10 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String? ignoredVersion)  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings():
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.ignoredVersion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +206,10 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String? ignoredVersion)?  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.ignoredVersion);case _:
   return null;
 
 }
@@ -217,7 +221,7 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 @JsonSerializable()
 
 class _AppSettings implements AppSettings {
-  const _AppSettings({this.trustInsecureCert = false, this.autoCheckUpdate = true, this.manualUploadDialogShown = false});
+  const _AppSettings({this.trustInsecureCert = false, this.autoCheckUpdate = true, this.manualUploadDialogShown = false, this.ignoredVersion});
   factory _AppSettings.fromJson(Map<String, dynamic> json) => _$AppSettingsFromJson(json);
 
 /// 是否信任不安全的 HTTPS 证书
@@ -229,6 +233,10 @@ class _AppSettings implements AppSettings {
 /// 是否已经显示过手动上传提示对话框
 /// 用户点击"我知道了"后设为 true，后续不再显示
 @override@JsonKey() final  bool manualUploadDialogShown;
+/// 被忽略的更新版本号
+/// 用户点击"忽略该版本"后设置，该版本将不再提示更新
+/// 当有新版本发布时，会自动清除该设置
+@override final  String? ignoredVersion;
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
@@ -243,16 +251,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown);
+int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,ignoredVersion);
 
 @override
 String toString() {
-  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown)';
+  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, ignoredVersion: $ignoredVersion)';
 }
 
 
@@ -263,7 +271,7 @@ abstract mixin class _$AppSettingsCopyWith<$Res> implements $AppSettingsCopyWith
   factory _$AppSettingsCopyWith(_AppSettings value, $Res Function(_AppSettings) _then) = __$AppSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown
+ bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String? ignoredVersion
 });
 
 
@@ -280,12 +288,13 @@ class __$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? ignoredVersion = freezed,}) {
   return _then(_AppSettings(
 trustInsecureCert: null == trustInsecureCert ? _self.trustInsecureCert : trustInsecureCert // ignore: cast_nullable_to_non_nullable
 as bool,autoCheckUpdate: null == autoCheckUpdate ? _self.autoCheckUpdate : autoCheckUpdate // ignore: cast_nullable_to_non_nullable
 as bool,manualUploadDialogShown: null == manualUploadDialogShown ? _self.manualUploadDialogShown : manualUploadDialogShown // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,ignoredVersion: freezed == ignoredVersion ? _self.ignoredVersion : ignoredVersion // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

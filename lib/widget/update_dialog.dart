@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/update_info/update_info.dart';
 import 'package:sync_clipboard_flutter/service/update_service.dart';
 
@@ -108,6 +110,32 @@ class _UpdateDialogState extends State<UpdateDialog> {
       _state = UpdateDialogState.selectSource;
       _errorMessage = null;
     });
+  }
+
+  /// 忽略该版本
+  Future<void> _ignoreVersion() async {
+    final prefs = await SharedPreferences.getInstance();
+    final settingsJson = prefs.getString('app_settings');
+    AppSettings settings;
+    if (settingsJson != null) {
+      try {
+        settings = appSettingsFromJson(settingsJson);
+      } catch (e) {
+        settings = const AppSettings();
+      }
+    } else {
+      settings = const AppSettings();
+    }
+    
+    // 更新忽略版本
+    final updatedSettings = settings.copyWith(
+      ignoredVersion: widget.updateInfo.version,
+    );
+    await prefs.setString('app_settings', appSettingsToJson(updatedSettings));
+    
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
@@ -257,9 +285,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
   List<Widget> _buildActions() {
     switch (_state) {
       case UpdateDialogState.selectSource:
-        // 只有非强制更新才显示取消按钮
+        // 只有非强制更新才显示取消和忽略按钮
         if (!widget.isForced) {
           return [
+            TextButton(
+              onPressed: _ignoreVersion,
+              child: const Text('忽略该版本'),
+            ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('稍后再说'),

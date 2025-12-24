@@ -23,6 +23,10 @@ abstract class AppSettings with _$AppSettings {
     /// 是否已经显示过手动上传提示对话框
     /// 用户点击"我知道了"后设为 true，后续不再显示
     @Default(false) bool manualUploadDialogShown,
+    /// 被忽略的更新版本号
+    /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
+    /// 当有新版本发布时，会自动清除该设置
+    String? ignoredVersion,
   }) = _AppSettings;
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => _$AppSettingsFromJson(json);

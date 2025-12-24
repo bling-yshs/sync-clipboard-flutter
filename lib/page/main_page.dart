@@ -39,9 +39,10 @@ class _MainPageState extends State<MainPage> {
     // 先检查设置是否启用自动检查更新
     final prefs = await SharedPreferences.getInstance();
     final settingsJson = prefs.getString('app_settings');
+    AppSettings? settings;
     if (settingsJson != null) {
       try {
-        final settings = appSettingsFromJson(settingsJson);
+        settings = appSettingsFromJson(settingsJson);
         if (!settings.autoCheckUpdate) {
           return; // 用户关闭了自动检查更新
         }
@@ -52,6 +53,12 @@ class _MainPageState extends State<MainPage> {
 
     final result = await UpdateService.checkForUpdate();
     if (result != null && mounted) {
+      // 检查是否忽略了该版本（非强制更新时才生效）
+      if (!result.isForced && 
+          settings?.ignoredVersion == result.updateInfo.version) {
+        return; // 用户已忽略该版本
+      }
+      
       showGeneralDialog(
         context: context,
         barrierDismissible: !result.isForced,
