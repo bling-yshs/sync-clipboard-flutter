@@ -169,7 +169,7 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: lts
+          node-version: 24
 
       - name: 安装脚本依赖
         working-directory: .github/script
@@ -251,7 +251,7 @@ jobs:
             ./artifacts/update.json
 
   # =======================================================
-  # JOB 5: 发布到 CNB (TODO)
+  # JOB 5: 发布到 CNB
   # =======================================================
   release_cnb:
     name: 5️⃣ 发布到 CNB
@@ -260,6 +260,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: 克隆仓库
+        uses: actions/checkout@v6
+
       - name: 下载 APK
         uses: actions/download-artifact@v7
         with:
@@ -272,12 +275,29 @@ jobs:
           name: release-metadata
           path: ./artifacts
 
-      # TODO: 等待用户提供 CNB 发布流程
-      - name: 发布到 CNB (待实现)
+      - name: 安装 Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: 安装脚本依赖
+        working-directory: .github/script
+        run: npm install
+
+      - name: 发布到 CNB
+        working-directory: .github/script
+        env:
+          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
         run: |
-          echo "⏳ CNB 发布流程待实现..."
-          echo "已准备好的文件:"
-          ls -la ./artifacts/
+          TAG=${{ needs.validate.outputs.new_tag }}
+          APK_NAME=${{ needs.validate.outputs.apk_name }}
+          CHANGELOG='${{ needs.generate_metadata.outputs.changelog }}'
+          
+          npx tsx release-cnb.ts \
+            --token "$CNB_TOKEN" \
+            --tag "$TAG" \
+            --changelog "$CHANGELOG" \
+            --files "../../artifacts/$APK_NAME" "../../artifacts/update.json"
 
   # =======================================================
   # JOB 6: 更新 CHANGELOG 并创建 PR
