@@ -1,8 +1,9 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
 # SyncClipboard Flutter 更新日志
-
 ## [Unreleased]
+
+## [0.2.2] - 2025-12-27
 
 ### Added
 
@@ -50,7 +51,8 @@
 
 - 第一次正式发布 sync-clipboard-tauri
 
-[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.2
 [0.2.1]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.1
 [0.1.3]: https://github.com/bling-yshs/sync-clipboard-tauri/commits/v0.1.3
 [0.1.2]: https://github.com/bling-yshs/sync-clipboard-tauri/commits/v0.1.2
