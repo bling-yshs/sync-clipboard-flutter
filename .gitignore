@@ -45,3 +45,6 @@ app.*.map.json
 /android/app/release
 /.agent/
 /android/build/
+
+node_modules/
+pnpm-lock.yaml

@@ -3,51 +3,52 @@ name: 🚀 发布新版本
 on:
   # 允许从 GitHub Actions 页面手动触发
   workflow_dispatch:
+    inputs:
+      min_version:
+        description: '最低支持版本号 (低于此版本的用户将被强制更新)'
+        required: false
+        default: '0.0.0'
+        type: string
 
 jobs:
   # =======================================================
   # JOB 1: 校验版本号
   # =======================================================
   validate:
-    name: 1. 校验版本号 (Validate Version)
+    name: 1️⃣ 校验版本号
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.compare.outputs.new_version }}
       new_tag: ${{ steps.compare.outputs.new_tag }}
       old_tag: ${{ steps.latest_tag.outputs.tag }}
+      apk_name: ${{ steps.set_names.outputs.apk_name }}
 
     steps:
-      - name: 克隆仓库 (Checkout repo)
+      - name: 克隆仓库
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0 # 必须获取所有 tags 才能比较
+          fetch-depth: 0
 
-      - name: 读取 pubspec.yaml 版本 (Read pubspec.yaml version)
+      - name: 读取 pubspec.yaml 版本
         id: pubspec_version
         run: |
-          # 从 pubspec.yaml 中提取版本号，格式如 "version: 0.2.1+2"
           VERSION=$(grep -E "^version:" pubspec.yaml | sed 's/version: //' | cut -d'+' -f1)
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: 获取最新的 Git Tag (Get latest Git tag)
+      - name: 获取最新的 Git Tag
         id: latest_tag
         run: |
-          # 1. 列出所有 tags
-          # 2. Grep 筛选出严格的 vX.Y.Z 格式 (例如 v0.1.0, v1.2.3)，忽略 'alpha' 等
-          # 3. 按版本号排序 (sort -V)
-          # 4. 取最后一个 (即版本最高的)
-          # 5. 如果没有找到 (例如第一次发布)，则默认为 v0.0.0
           LATEST_TAG=$(git tag | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -n 1 || echo "v0.0.0")
           echo "找到的最新的语义化版本 Tag: $LATEST_TAG"
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
-      - name: 比较版本号 (Compare versions)
+      - name: 比较版本号
         id: compare
         run: |
           APP_VERSION=${{ steps.pubspec_version.outputs.app_version }}
           LATEST_TAG_VERSION=${{ steps.latest_tag.outputs.tag }}
-          LATEST_TAG_VERSION_NUM=${LATEST_TAG_VERSION#v} # 去掉 'v' -> 0.1.0
+          LATEST_TAG_VERSION_NUM=${LATEST_TAG_VERSION#v}
           
           echo "App 版本 (Current): $APP_VERSION"
           echo "Git Tag 版本 (Latest): $LATEST_TAG_VERSION_NUM"
@@ -57,45 +58,52 @@ jobs:
             exit 1
           fi
           
-          # 使用 sort -V 来安全地比较版本号
           LATEST_VERSION=$(printf "%s\n%s" "$APP_VERSION" "$LATEST_TAG_VERSION_NUM" | sort -V | tail -n 1)
           
           if [ "$LATEST_VERSION" != "$APP_VERSION" ]; then
-            echo "::error::pubspec.yaml 版本 ($APP_VERSION) 小于或等于最新的 Tag 版本 ($LATEST_TAG_VERSION_NUM)。请在发布前更新 pubspec.yaml。"
+            echo "::error::pubspec.yaml 版本 ($APP_VERSION) 小于最新的 Tag 版本 ($LATEST_TAG_VERSION_NUM)。请在发布前更新 pubspec.yaml。"
             exit 1
           fi
           
-          echo "版本校验通过 (Validation passed)!"
+          echo "版本校验通过!"
           echo "new_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "new_tag=v$APP_VERSION" >> $GITHUB_OUTPUT
 
+      - name: 设置文件名
+        id: set_names
+        run: |
+          VERSION=${{ steps.compare.outputs.new_version }}
+          echo "apk_name=sync-clipboard-flutter-${VERSION}-arm64.apk" >> $GITHUB_OUTPUT
+
   # =======================================================
-  # JOB 2: 构建并发布 Release
+  # JOB 2: 构建 APK
   # =======================================================
-  build_and_release:
-    name: 2. 构建并发布 (Build and Release)
+  build:
+    name: 2️⃣ 构建 APK
     if: github.ref == 'refs/heads/main'
-    needs: validate # 依赖 validate job 成功
+    needs: validate
     runs-on: ubuntu-22.04
+    outputs:
+      apk_name: ${{ needs.validate.outputs.apk_name }}
 
     steps:
-      - name: 克隆当前仓库 (Clone current repo)
+      - name: 克隆仓库
         uses: actions/checkout@v6
 
-      - name: 安装 Java (Install Java)
+      - name: 安装 Java
         uses: actions/setup-java@v5
         with:
           distribution: 'liberica'
           java-version: '21'
 
-      - name: 安装 Flutter (Set up Flutter)
+      - name: 安装 Flutter
         uses: subosito/flutter-action@v2
         with:
           cache: true
           flutter-version-file: "pubspec.yaml"
 
-      - name: Gradle 缓存 (Gradle cache)
-        uses: actions/cache@v4
+      - name: Gradle 缓存
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
@@ -104,81 +112,214 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: 拉取依赖 (flutter pub get)
+      - name: 拉取依赖
         run: flutter pub get
 
-      - name: 创建签名配置 (Create signing config)
+      - name: 创建签名配置
         env:
           FLUTTER_ANDROID_KEYSTORE_BASE64: ${{ secrets.FLUTTER_ANDROID_KEYSTORE_BASE64 }}
           FLUTTER_KEYSTORE_PASSWORD: ${{ secrets.FLUTTER_KEYSTORE_PASSWORD }}
           FLUTTER_KEY_ALIAS: ${{ secrets.FLUTTER_KEY_ALIAS }}
         run: |
           echo "$FLUTTER_ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/SyncClipboardAndroidKey.jks
-          cat > android/key.properties << EOF
+          cat > android/key.properties <<EOF
           storePassword=$FLUTTER_KEYSTORE_PASSWORD
           keyPassword=$FLUTTER_KEYSTORE_PASSWORD
           keyAlias=$FLUTTER_KEY_ALIAS
           storeFile=SyncClipboardAndroidKey.jks
           EOF
 
-      - name: 构建 APK (Build APK)
+      - name: 构建 APK
         run: flutter build apk --release --target-platform android-arm64
 
-      - name: 重命名 APK (Rename APK)
-        id: rename_apk
+      - name: 重命名 APK
         run: |
-          VERSION=${{ needs.validate.outputs.new_version }}
-          ORIGINAL_PATH="./build/app/outputs/flutter-apk/app-release.apk"
-          NEW_NAME="sync-clipboard-flutter-${VERSION}-arm64.apk"
-          mv $ORIGINAL_PATH ./$NEW_NAME
-          echo "apk_path=./$NEW_NAME" >> $GITHUB_OUTPUT
+          APK_NAME=${{ needs.validate.outputs.apk_name }}
+          mv ./build/app/outputs/flutter-apk/app-release.apk ./$APK_NAME
 
-      - name: 读取 Unreleased Changelog (Read Unreleased Changelog)
+      - name: 上传 APK 到 Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-apk
+          path: ${{ needs.validate.outputs.apk_name }}
+          retention-days: 1
+
+  # =======================================================
+  # JOB 3: 生成 Changelog 和 update.json
+  # =======================================================
+  generate_metadata:
+    name: 3️⃣ 生成元数据
+    if: github.ref == 'refs/heads/main'
+    needs: [validate, build]
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.changelog_reader.outputs.changes }}
+      changelog_link: ${{ steps.changelog_link.outputs.url }}
+
+    steps:
+      - name: 克隆仓库
+        uses: actions/checkout@v6
+
+      - name: 下载 APK
+        uses: actions/download-artifact@v7
+        with:
+          name: release-apk
+          path: ./artifacts
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: 安装脚本依赖
+        working-directory: .github/script
+        run: npm install
+
+      - name: 读取 Changelog
         id: changelog_reader
         uses: mindsers/changelog-reader-action@v2.2.3
         with:
-          version: 'Unreleased' # 发布时，新版本的内容仍在 Unreleased 块中
+          version: 'Unreleased'
           path: './CHANGELOG.md'
 
-      - name: 生成 Full Changelog 链接 (Generate Full Changelog Link)
+      - name: 生成 Full Changelog 链接
         id: changelog_link
         run: |
           echo "url=${{ github.server_url }}/${{ github.repository }}/compare/${{ needs.validate.outputs.old_tag }}...${{ needs.validate.outputs.new_tag }}" >> $GITHUB_OUTPUT
 
-      - name: 创建 GitHub Release (Create GitHub Release)
+      - name: 生成 update.json
+        working-directory: .github/script
+        env:
+          MIN_VERSION: ${{ inputs.min_version || '0.0.0' }}
+        run: |
+          APK_NAME=${{ needs.validate.outputs.apk_name }}
+          VERSION=${{ needs.validate.outputs.new_version }}
+          CHANGELOG='${{ steps.changelog_reader.outputs.changes }}'
+          
+          npx tsx gen-update.ts \
+            --version "$VERSION" \
+            --apk-path "../../artifacts/$APK_NAME" \
+            --changelog "$CHANGELOG" \
+            --min-version "$MIN_VERSION"
+
+      - name: 移动 update.json 到 artifacts
+        run: mv ./artifacts/update.json ./artifacts/
+
+      - name: 上传元数据到 Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-metadata
+          path: ./artifacts/update.json
+          retention-days: 1
+
+  # =======================================================
+  # JOB 4: 发布到 GitHub
+  # =======================================================
+  release_github:
+    name: 4️⃣ 发布到 GitHub
+    if: github.ref == 'refs/heads/main'
+    needs: [validate, build, generate_metadata]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 下载 APK
+        uses: actions/download-artifact@v7
+        with:
+          name: release-apk
+          path: ./artifacts
+
+      - name: 下载元数据
+        uses: actions/download-artifact@v7
+        with:
+          name: release-metadata
+          path: ./artifacts
+
+      - name: 创建 GitHub Release
         uses: ncipollo/release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ needs.validate.outputs.new_tag }} # e.g., v0.1.1
+          tag: ${{ needs.validate.outputs.new_tag }}
           name: ${{ needs.validate.outputs.new_tag }}
           body: |
-            ${{ steps.changelog_reader.outputs.description || steps.changelog_reader.outputs.changes }}
+            ${{ needs.generate_metadata.outputs.changelog }}
 
             ---
-            **Full Changelog**: ${{ steps.changelog_link.outputs.url }}
-          prerelease: false # 这是正式版
-          artifacts: ${{ steps.rename_apk.outputs.apk_path }} # 上传重命名后的 APK
+            **Full Changelog**: ${{ needs.generate_metadata.outputs.changelog_link }}
+          prerelease: false
+          artifacts: |
+            ./artifacts/${{ needs.validate.outputs.apk_name }}
+            ./artifacts/update.json
 
   # =======================================================
-  # JOB 3: 更新 CHANGELOG 并创建 PR
+  # JOB 5: 发布到 CNB
+  # =======================================================
+  release_cnb:
+    name: 5️⃣ 发布到 CNB
+    if: github.ref == 'refs/heads/main'
+    needs: [validate, build, generate_metadata]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 克隆仓库
+        uses: actions/checkout@v6
+
+      - name: 下载 APK
+        uses: actions/download-artifact@v7
+        with:
+          name: release-apk
+          path: ./artifacts
+
+      - name: 下载元数据
+        uses: actions/download-artifact@v7
+        with:
+          name: release-metadata
+          path: ./artifacts
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: 安装脚本依赖
+        working-directory: .github/script
+        run: npm install
+
+      - name: 发布到 CNB
+        working-directory: .github/script
+        env:
+          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
+        run: |
+          TAG=${{ needs.validate.outputs.new_tag }}
+          APK_NAME=${{ needs.validate.outputs.apk_name }}
+          CHANGELOG='${{ needs.generate_metadata.outputs.changelog }}'
+          
+          npx tsx release-cnb.ts \
+            --token "$CNB_TOKEN" \
+            --tag "$TAG" \
+            --changelog "$CHANGELOG" \
+            --files "../../artifacts/$APK_NAME" "../../artifacts/update.json"
+
+  # =======================================================
+  # JOB 6: 更新 CHANGELOG 并创建 PR
   # =======================================================
   update_changelog:
-    name: 3. 更新 CHANGELOG 并创建 PR (Update CHANGELOG)
+    name: 6️⃣ 更新 CHANGELOG
     if: github.ref == 'refs/heads/main'
-    needs: [validate, build_and_release] # 必须在发布成功后运行
+    needs: [validate, release_github]
     runs-on: ubuntu-latest
+
     steps:
-      - name: 克隆仓库 (Checkout repo)
+      - name: 克隆仓库
         uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }} # 使用 GITHUB_TOKEN
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 配置 Git (Configure Git)
+      - name: 配置 Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: 更新 CHANGELOG.md (Update CHANGELOG.md)
+      - name: 更新 CHANGELOG.md
         env:
           NEW_VERSION: ${{ needs.validate.outputs.new_version }}
           NEW_TAG: ${{ needs.validate.outputs.new_tag }}
@@ -195,16 +336,16 @@ jobs:
           # 2. 替换 [Unreleased] 标题为新版本标题
           sed -i.bak "s|## \[Unreleased\]|## \[${NEW_VERSION}\] - ${TODAY}|" $FILE
 
-          # 3. 在文件主标题 (# ...) 下方添加新的 [Unreleased] 块
-          sed -i.bak "/^# .*/a \\
-          \\
+          # 3. 在文件主标题下方添加新的 [Unreleased] 块
+          sed -i.bak "/^# .*/a \\\
+          \\\
           ## [Unreleased]
           " $FILE
           
           # 4. 替换旧的 Unreleased 链接
           sed -i.bak "s|^\[Unreleased\]:.*|${NEW_UNRELEASED_LINK_LINE}|" $FILE
           
-          # 5. 在 Unreleased 链接 *下面* 添加新版本的链接
+          # 5. 在 Unreleased 链接下面添加新版本的链接
           sed -i.bak "/^\[Unreleased\]:/a ${NEW_VERSION_LINK_LINE}" $FILE
           
           # 6. 删除备份文件
@@ -214,13 +355,13 @@ jobs:
           cat $FILE
           echo "-----------------------------------"
 
-      - name: 创建 PR 到 dev 分支 (Create PR to dev)
-        uses: peter-evans/create-pull-request@v7
+      - name: 创建 PR 到 dev 分支
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: 自动更新 CHANGELOG.md v${{ needs.validate.outputs.new_version }}"
           branch: "chore/update-changelog-${{ needs.validate.outputs.new_version }}"
-          base: "dev" # 目标分支是 dev
+          base: "dev"
           title: "chore: 自动更新 CHANGELOG.md v${{ needs.validate.outputs.new_version }}"
           body: |
             自动更新 CHANGELOG.md v${{ needs.validate.outputs.new_version }}

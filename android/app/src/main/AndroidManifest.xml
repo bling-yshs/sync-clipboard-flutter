@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- 网络权限 - 用于同步剪贴板功能 -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 安装 APK 权限 - 用于应用内更新 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     
     <application
         android:label="同步剪贴板"
