@@ -6,6 +6,17 @@
 
 ### Added
 
+- 添加更新检查
+- 支持在调试页面手动上传文件
+
+### Fixed
+
+- 替换底部导航栏诡异的原生动画
+
+## [0.2.1] - 2025-12-07
+
+### Added
+
 - 使用 Flutter 重写
 - 支持分享文本或任意文件到 app
 
@@ -39,7 +50,8 @@
 
 - 第一次正式发布 sync-clipboard-tauri
 
-[Unreleased]: https://github.com/bling-yshs/sync-clipboard-tauri/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.1
 [0.1.3]: https://github.com/bling-yshs/sync-clipboard-tauri/commits/v0.1.3
 [0.1.2]: https://github.com/bling-yshs/sync-clipboard-tauri/commits/v0.1.2
 [0.1.1]: https://github.com/bling-yshs/sync-clipboard-tauri/commits/v0.1.1

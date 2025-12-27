@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'router/app_router.dart';
 
@@ -34,8 +35,19 @@ class MyApp extends StatelessWidget {
         }
 
         return MaterialApp.router(
-          title: 'SyncClipboard',
+          title: '同步剪贴板',
           debugShowCheckedModeBanner: false,
+          // 本地化配置 - 支持中文
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('zh', 'CN'), // 简体中文
+            Locale('zh', 'TW'), // 繁体中文
+            Locale('en', 'US'), // 英文
+          ],
           theme: ThemeData(
             colorScheme: lightColorScheme,
             useMaterial3: true,

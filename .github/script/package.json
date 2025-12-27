@@ -1,0 +1,9 @@
+{
+  "name": "script",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "tsx": "^4.21.0",
+    "@types/node": "^24"
+  }
+}

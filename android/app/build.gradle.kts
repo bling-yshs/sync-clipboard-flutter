@@ -15,6 +15,13 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// 检查是否有完整的签名配置
+val hasSigningConfig = keystorePropertiesFile.exists() &&
+        keystoreProperties.containsKey("keyAlias") &&
+        keystoreProperties.containsKey("keyPassword") &&
+        keystoreProperties.containsKey("storeFile") &&
+        keystoreProperties.containsKey("storePassword")
+
 android {
     namespace = "com.yshs.sync_clipboard_flutter"
     compileSdk = flutter.compileSdkVersion
@@ -40,22 +47,34 @@ android {
         versionName = flutter.versionName
     }
 
-    signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { file(it.toString()) }
-            storePassword = keystoreProperties["storePassword"] as String
+    // 只有在有完整签名配置时才创建 release signingConfig
+    if (hasSigningConfig) {
+        signingConfigs {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = keystoreProperties["storeFile"]?.let { file(it.toString()) }
+                storePassword = keystoreProperties["storePassword"] as String
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // 有签名配置时使用 release 签名，否则使用 debug 签名
+            signingConfig = if (hasSigningConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
-        // 让 debug 也使用同一份签名，方便本地和 CI 包互相覆盖
         debug {
-            signingConfig = signingConfigs.getByName("release")
+            // 有签名配置时使用 release 签名（方便本地和 CI 包互相覆盖），否则使用 debug 签名
+            signingConfig = if (hasSigningConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

@@ -1,13 +1,17 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:archive/archive.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:media_scanner/media_scanner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
+import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
 
 class DebugPage extends StatefulWidget {
@@ -20,6 +24,11 @@ class DebugPage extends StatefulWidget {
 class _DebugPageState extends State<DebugPage> {
   // 创建 Logger 实例 - 用于记录日志
   final Logger _log = Logger();
+  
+  // 手动上传相关状态
+  bool _isUploading = false;
+  double _uploadProgress = 0.0;
+  String _uploadingFileName = '';
 
   /// 获取唯一的文件名，如果存在同名文件则在文件名后添加 _1, _2, _3...
   /// 
@@ -261,6 +270,157 @@ class _DebugPageState extends State<DebugPage> {
     }
   }
 
+  /// 手动上传文件
+  Future<void> _uploadFile() async {
+    try {
+      // 1. 检查是否需要显示提示对话框
+      final prefs = await SharedPreferences.getInstance();
+      final settingsJson = prefs.getString('app_settings');
+      final settings = settingsJson != null
+          ? appSettingsFromJson(settingsJson)
+          : const AppSettings();
+
+      if (!settings.manualUploadDialogShown) {
+        // 显示提示对话框
+        final shouldContinue = await _showTipDialog();
+        if (!shouldContinue) {
+          return;
+        }
+
+        // 保存已显示过对话框的状态
+        final updatedSettings = settings.copyWith(manualUploadDialogShown: true);
+        await prefs.setString('app_settings', appSettingsToJson(updatedSettings));
+      }
+
+      // 2. 调用文件选择器并上传
+      await _pickAndUploadFile();
+    } catch (e) {
+      _log.e('手动上传文件失败', error: e);
+      Fluttertoast.showToast(
+        msg: '操作失败：$e',
+      );
+    }
+  }
+
+  /// 显示提示对话框
+  /// 返回 true 表示用户点击了"我知道了"，false 表示用户取消
+  Future<bool> _showTipDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lightbulb_outline, color: Colors.amber),
+              SizedBox(width: 8),
+              Text('小提示'),
+            ],
+          ),
+          content: const Text(
+            '本 App 支持从相册或文件管理器中，长按文件后选择"分享"到本 App 直接上传，这样使用起来更加方便快捷！',
+            style: TextStyle(fontSize: 15, height: 1.5),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('我知道了'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  /// 选择文件并上传
+  Future<void> _pickAndUploadFile() async {
+    try {
+      // 1. 打开文件选择器
+      _log.i('打开文件选择器...');
+      final result = await FilePicker.platform.pickFiles();
+
+      if (result == null) {
+        // 用户取消选择
+        _log.d('用户取消了文件选择');
+        return;
+      }
+
+      // 2. 获取文件信息
+      final platformFile = result.files.first;
+      final filename = platformFile.name;
+      final Uint8List fileBytes;
+
+      if (platformFile.bytes != null) {
+        // Web 平台
+        fileBytes = platformFile.bytes!;
+      } else if (platformFile.path != null) {
+        // 移动/桌面平台
+        final file = File(platformFile.path!);
+        fileBytes = await file.readAsBytes();
+      } else {
+        throw Exception('无法读取文件内容');
+      }
+
+      _log.i('选择文件: $filename, 大小: ${fileBytes.length} bytes');
+
+      // 3. 开始上传
+      setState(() {
+        _isUploading = true;
+        _uploadProgress = 0.0;
+        _uploadingFileName = filename;
+      });
+
+      final client = await SyncClipboardClient.create();
+      _log.i('开始上传文件到服务器: ${client.config.url}');
+
+      await client.putSyncClipboardFile(
+        filename,
+        fileBytes,
+        onSendProgress: (sent, total) {
+          if (total != -1) {
+            setState(() {
+              _uploadProgress = sent / total;
+            });
+          }
+        },
+      );
+
+      // 4. 更新 SyncClipboard.json
+      final clipboard = clipboard_model.Clipboard(
+        file: filename,
+        clipboard: '',
+        type: clipboard_model.ClipboardType.file,
+      );
+      await client.putSyncClipboardJson(clipboard);
+
+      _log.i('文件上传成功: $filename');
+
+      setState(() {
+        _isUploading = false;
+      });
+
+      Fluttertoast.showToast(
+        msg: '文件上传成功！\n$filename',
+      );
+    } on SyncClipboardException catch (e) {
+      _log.e('上传失败 - 业务异常', error: e);
+      setState(() {
+        _isUploading = false;
+      });
+      Fluttertoast.showToast(
+        msg: '上传失败：${e.message}',
+      );
+    } catch (e) {
+      _log.e('上传失败 - 未知错误', error: e);
+      setState(() {
+        _isUploading = false;
+      });
+      Fluttertoast.showToast(
+        msg: '上传失败：$e',
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -309,6 +469,44 @@ class _DebugPageState extends State<DebugPage> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
+          
+          const SizedBox(height: 16),
+          
+          // 手动上传文件按钮
+          FilledButton.icon(
+            onPressed: _isUploading ? null : _uploadFile,
+            icon: _isUploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.upload_file),
+            label: Text(
+              _isUploading
+                  ? '上传中... ${(_uploadProgress * 100).toStringAsFixed(0)}%'
+                  : '手动上传文件',
+            ),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+          
+          if (_isUploading) ...[
+            const SizedBox(height: 12),
+            LinearProgressIndicator(value: _uploadProgress),
+            const SizedBox(height: 8),
+            Text(
+              '正在上传: $_uploadingFileName',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ],
       ),
     );

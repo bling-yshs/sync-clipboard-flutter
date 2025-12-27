@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.2.1+2
+version: 0.2.2+3
 
 environment:
   sdk: ^3.10.1
@@ -30,6 +30,8 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
@@ -68,7 +70,17 @@ dependencies:
   # 日期格式化
   intl: ^0.20.2
   # 应用信息
-  package_info_plus: ^8.3.0
+  package_info_plus: ^9.0.0
+  # 文件选择器
+  file_picker: ^10.3.7
+  # 版本比较
+  pub_semver: ^2.2.0
+  # APK 安装
+  android_package_installer: ^0.0.3
+  # Markdown 渲染
+  flutter_markdown_plus: ^1.0.5
+  # SHA256 计算
+  crypto: ^3.0.7
 
 dev_dependencies:
   build_runner: ^2.10.4
@@ -96,7 +108,7 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - icon.png
+    - assets/icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -128,9 +140,9 @@ flutter:
 flutter_launcher_icons:
   android: true              # 只为 Android 生成图标
   ios: false                 # 不生成 iOS 图标
-  image_path: "icon.png"     # 图标路径
+  image_path: "assets/icon.png"     # 图标路径
 
   # Android 8.0+ 自适应图标配置
   adaptive_icon_background: "#FFFFFF"  # 背景色（白色）
-  adaptive_icon_foreground: "icon.png" # 前景图层
+  adaptive_icon_foreground: "assets/icon.png" # 前景图层
   min_sdk_android: 21        # 最低支持 Android 5.0

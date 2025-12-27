@@ -16,7 +16,6 @@ class _ConfigPageState extends State<ConfigPage> {
   AppSettings _settings = const AppSettings();
   bool _isLoading = true;
   String _version = '';
-  bool _testSwitch = false; // 测试按钮状态
 
   @override
   void initState() {
@@ -68,6 +67,11 @@ class _ConfigPageState extends State<ConfigPage> {
     await _saveSettings(newSettings);
   }
 
+  Future<void> _toggleAutoCheckUpdate(bool value) async {
+    final newSettings = _settings.copyWith(autoCheckUpdate: value);
+    await _saveSettings(newSettings);
+  }
+
   /// 构建分类标题
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -103,27 +107,23 @@ class _ConfigPageState extends State<ConfigPage> {
           onChanged: _toggleTrustInsecureCert,
         ),
         
+        // 启动时自动检查更新
+        SwitchListTile(
+          secondary: const Icon(Icons.system_update),
+          title: const Text('启动时检查更新'),
+          subtitle: const Text('关闭后将不会在启动时自动检查更新'),
+          value: _settings.autoCheckUpdate,
+          onChanged: _toggleAutoCheckUpdate,
+        ),
+        
         // ===== 其它 =====
-        _buildSectionHeader('其它'),
+        _buildSectionHeader('关于'),
         
         // 软件版本
         ListTile(
           leading: const Icon(Icons.memory),
           title: const Text('软件版本'),
           subtitle: Text(_version),
-        ),
-        
-        // 测试按钮
-        SwitchListTile(
-          secondary: const Icon(Icons.science),
-          title: const Text('测试按钮'),
-          subtitle: const Text('没有任何效果'),
-          value: _testSwitch,
-          onChanged: (value) {
-            setState(() {
-              _testSwitch = value;
-            });
-          },
         ),
       ],
     );
