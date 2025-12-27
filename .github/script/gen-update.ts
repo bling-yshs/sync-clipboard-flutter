@@ -86,7 +86,7 @@ function generateSources(version: string, apkFileName: string): DownloadSource[]
     {
       id: 'cnb',
       name: 'CNB (国内加速)',
-      url: `https://cnb.cool/bling-team/sync-clipboard-flutter-action/-/releases/v${version}/download/${apkFileName}`,
+      url: `https://cnb.cool/bling-team/sync-clipboard-flutter-action/-/releases/download/v${version}/${apkFileName}`,
     },
   ]
 }
