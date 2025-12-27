@@ -202,9 +202,6 @@ jobs:
             --changelog "$CHANGELOG" \
             --min-version "$MIN_VERSION"
 
-      - name: 移动 update.json 到 artifacts
-        run: mv ./artifacts/update.json ./artifacts/
-
       - name: 上传元数据到 Artifact
         uses: actions/upload-artifact@v6
         with:
