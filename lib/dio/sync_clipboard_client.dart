@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sync_clipboard_flutter/model/server_config/server_config.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
+import 'package:sync_clipboard_flutter/service/server_config_service.dart';
 
 /// SyncClipboard API 客户端
 /// 封装了与 SyncClipboard 服务器的所有 HTTP 通信
@@ -18,7 +19,7 @@ class SyncClipboardClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: _normalizeBaseUrl(config.url),
-        connectTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 5),
         sendTimeout: const Duration(minutes: 10),  // 上传大文件需要更长时间
         receiveTimeout: const Duration(minutes: 5), // 下载大文件需要更长时间
         validateStatus: (status) => status != null && status < 500,
@@ -57,17 +58,19 @@ class SyncClipboardClient {
   /// 会自动读取 AppSettings 中的 trustInsecureCert 设置
   static Future<SyncClipboardClient> create() async {
     final prefs = await SharedPreferences.getInstance();
-    
-    // 加载服务器配置
-    final savedJson = prefs.getString('server_config');
-    final config = serverConfigFromJson(savedJson!);
-    
+
+    // 使用新服务获取激活配置
+    final config = await ServerConfigService.getActiveConfig();
+    if (config == null) {
+      throw SyncClipboardException('未配置服务器，请先添加服务器配置');
+    }
+
     // 加载应用设置
     final settingsJson = prefs.getString('app_settings');
     final settings = settingsJson != null
         ? appSettingsFromJson(settingsJson)
         : const AppSettings();
-    
+
     return SyncClipboardClient._(config, trustInsecureCert: settings.trustInsecureCert);
   }
 

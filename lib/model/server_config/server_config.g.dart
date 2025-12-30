@@ -8,6 +8,8 @@ part of 'server_config.dart';
 
 _ServerConfig _$ServerConfigFromJson(Map<String, dynamic> json) =>
     _ServerConfig(
+      id: json['id'] as String,
+      name: json['name'] as String?,
       url: json['url'] as String,
       username: json['username'] as String,
       password: json['password'] as String,
@@ -15,6 +17,8 @@ _ServerConfig _$ServerConfigFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ServerConfigToJson(_ServerConfig instance) =>
     <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
       'url': instance.url,
       'username': instance.username,
       'password': instance.password,
