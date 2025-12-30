@@ -1,47 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:sync_clipboard_flutter/model/server_config/server_config.dart';
-import 'package:sync_clipboard_flutter/model/server_config/server_config_list.dart';
+import 'package:sync_clipboard_flutter/model/server_config/server_config_state.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
-import 'package:sync_clipboard_flutter/service/server_config_service.dart';
+import 'package:sync_clipboard_flutter/provider/server_config_provider.dart';
 import 'package:logger/logger.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   final Logger _log = Logger();
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  // 配置列表
-  ServerConfigList _configList = const ServerConfigList();
-  // 当前编辑的配置 ID（null 表示新建模式）
-  String? _editingConfigId;
-  // 是否正在加载
-  bool _isLoading = true;
-  // 防止重复保存
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadConfigList();
-
-    // 监听文本变化，实时保存
-    _nameController.addListener(_saveConfig);
-    _urlController.addListener(_saveConfig);
-    _usernameController.addListener(_saveConfig);
-    _passwordController.addListener(_saveConfig);
-  }
 
   @override
   void dispose() {
@@ -52,191 +31,28 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  // 加载配置列表
-  Future<void> _loadConfigList() async {
-    final configList = await ServerConfigService.getConfigList();
-    setState(() {
-      _configList = configList;
-      _isLoading = false;
-    });
-
-    // 如果有激活配置，填充表单
-    if (configList.activeConfigId != null && configList.configs.isNotEmpty) {
-      final activeConfig = configList.configs.firstWhere(
-        (c) => c.id == configList.activeConfigId,
-        orElse: () => configList.configs.first,
-      );
-      _fillForm(activeConfig);
-      _editingConfigId = activeConfig.id;
+  /// 同步 controller 与 state
+  void _syncControllers(ServerConfigState state) {
+    if (_nameController.text != state.name) {
+      _nameController.text = state.name;
     }
-  }
-
-  // 填充表单
-  void _fillForm(ServerConfig config) {
-    // 移除监听器，避免触发保存
-    _nameController.removeListener(_saveConfig);
-    _urlController.removeListener(_saveConfig);
-    _usernameController.removeListener(_saveConfig);
-    _passwordController.removeListener(_saveConfig);
-
-    _nameController.text = config.name ?? '';
-    _urlController.text = config.url;
-    _usernameController.text = config.username;
-    _passwordController.text = config.password;
-
-    // 重新添加监听器
-    _nameController.addListener(_saveConfig);
-    _urlController.addListener(_saveConfig);
-    _usernameController.addListener(_saveConfig);
-    _passwordController.addListener(_saveConfig);
-  }
-
-  // 清空表单
-  void _clearForm() {
-    // 移除监听器，避免触发保存
-    _nameController.removeListener(_saveConfig);
-    _urlController.removeListener(_saveConfig);
-    _usernameController.removeListener(_saveConfig);
-    _passwordController.removeListener(_saveConfig);
-
-    _nameController.clear();
-    _urlController.clear();
-    _usernameController.clear();
-    _passwordController.clear();
-
-    // 重新添加监听器
-    _nameController.addListener(_saveConfig);
-    _urlController.addListener(_saveConfig);
-    _usernameController.addListener(_saveConfig);
-    _passwordController.addListener(_saveConfig);
-  }
-
-  // 保存配置（实时保存）
-  Future<void> _saveConfig() async {
-    if (_isSaving) return;
-    _isSaving = true;
-
-    try {
-      final name = _nameController.text.isEmpty ? null : _nameController.text;
-      final url = _urlController.text;
-      final username = _usernameController.text;
-      final password = _passwordController.text;
-
-      // 如果所有字段都为空，不保存
-      if (url.isEmpty && username.isEmpty && password.isEmpty) {
-        _isSaving = false;
-        return;
-      }
-
-      if (_editingConfigId != null) {
-        // 编辑模式：更新现有配置
-        final config = ServerConfig(
-          id: _editingConfigId!,
-          name: name,
-          url: url,
-          username: username,
-          password: password,
-        );
-        final newList = await ServerConfigService.updateConfig(config);
-        setState(() {
-          _configList = newList;
-        });
-      } else {
-        // 新建模式：创建新配置
-        final newId = ServerConfigService.generateId();
-        final config = ServerConfig(
-          id: newId,
-          name: name,
-          url: url,
-          username: username,
-          password: password,
-        );
-        final newList = await ServerConfigService.addConfig(config);
-        setState(() {
-          _configList = newList;
-          _editingConfigId = newId;
-        });
-      }
-    } finally {
-      _isSaving = false;
+    if (_urlController.text != state.url) {
+      _urlController.text = state.url;
     }
-  }
-
-  // 切换配置
-  Future<void> _switchConfig(String configId) async {
-    final newList = await ServerConfigService.setActiveConfig(configId);
-    final config = newList.configs.firstWhere((c) => c.id == configId);
-
-    setState(() {
-      _configList = newList;
-      _editingConfigId = configId;
-    });
-
-    // 填充表单
-    _fillForm(config);
-  }
-
-  // 新建配置
-  void _createNewConfig() {
-    _clearForm();
-    setState(() {
-      _editingConfigId = null;
-    });
-  }
-
-  // 删除配置
-  Future<void> _deleteConfig(String configId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除配置'),
-        content: const Text('确定要删除这个配置吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    final newList = await ServerConfigService.deleteConfig(configId);
-    setState(() {
-      _configList = newList;
-    });
-
-    // 如果删除的是当前编辑的配置
-    if (configId == _editingConfigId) {
-      if (newList.configs.isNotEmpty) {
-        // 切换到新的激活配置
-        final activeConfig = newList.configs.firstWhere(
-          (c) => c.id == newList.activeConfigId,
-          orElse: () => newList.configs.first,
-        );
-        _fillForm(activeConfig);
-        _editingConfigId = activeConfig.id;
-      } else {
-        // 没有配置了，清空表单
-        _clearForm();
-        _editingConfigId = null;
-      }
+    if (_usernameController.text != state.username) {
+      _usernameController.text = state.username;
     }
-
-    Fluttertoast.showToast(msg: '配置已删除');
+    if (_passwordController.text != state.password) {
+      _passwordController.text = state.password;
+    }
   }
 
   // 显示编辑对话框
-  Future<void> _showEditDialog() async {
-    if (_editingConfigId == null) return;
+  Future<void> _showEditDialog(ServerConfigState state) async {
+    if (state.editingConfigId == null) return;
 
-    final currentConfig = _configList.configs.firstWhere(
-      (c) => c.id == _editingConfigId,
+    final currentConfig = state.configList.configs.firstWhere(
+      (c) => c.id == state.editingConfigId,
     );
 
     final nameController = TextEditingController(text: currentConfig.name ?? '');
@@ -262,7 +78,7 @@ class _HomePageState extends State<HomePage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _deleteConfig(_editingConfigId!);
+              _deleteConfig(state.editingConfigId!);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('删除'),
@@ -275,7 +91,9 @@ class _HomePageState extends State<HomePage> {
             onPressed: () async {
               Navigator.of(context).pop();
               // 更新名称
-              _nameController.text = nameController.text;
+              ref.read(serverConfigProvider.notifier).updateField(
+                    name: nameController.text,
+                  );
             },
             child: const Text('保存'),
           ),
@@ -284,6 +102,32 @@ class _HomePageState extends State<HomePage> {
     );
 
     nameController.dispose();
+  }
+
+  // 删除配置
+  Future<void> _deleteConfig(String configId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除配置'),
+        content: const Text('确定要删除这个配置吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await ref.read(serverConfigProvider.notifier).deleteConfig(configId);
+    Fluttertoast.showToast(msg: '配置已删除');
   }
 
   // 测试服务器连接
@@ -337,105 +181,126 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final asyncState = ref.watch(serverConfigProvider);
 
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            '服务器配置',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          // 配置选择器行
-          Row(
+    return asyncState.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('加载失败: $error')),
+      data: (state) {
+        // 同步 controller
+        _syncControllers(state);
+
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _buildConfigDropdown(),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: _createNewConfig,
-                icon: const Icon(Icons.add),
-                tooltip: '新建配置',
-              ),
-              if (_editingConfigId != null)
-                IconButton(
-                  onPressed: _showEditDialog,
-                  icon: const Icon(Icons.edit),
-                  tooltip: '编辑配置',
+              const Text(
+                '服务器配置',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              // 配置选择器行
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildConfigDropdown(state),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      ref.read(serverConfigProvider.notifier).createNewConfig();
+                    },
+                    icon: const Icon(Icons.add),
+                    tooltip: '新建配置',
+                  ),
+                  if (state.editingConfigId != null)
+                    IconButton(
+                      onPressed: () => _showEditDialog(state),
+                      icon: const Icon(Icons.edit),
+                      tooltip: '编辑配置',
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: '配置名称（可选）',
+                  hintText: '留空则显示服务器地址',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.label),
+                ),
+                onChanged: (value) {
+                  ref.read(serverConfigProvider.notifier).updateField(name: value);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _urlController,
+                decoration: const InputDecoration(
+                  labelText: '服务器地址',
+                  hintText: '请输入服务器地址',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.dns),
+                ),
+                keyboardType: TextInputType.url,
+                onChanged: (value) {
+                  ref.read(serverConfigProvider.notifier).updateField(url: value);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: '用户名',
+                  hintText: '请输入用户名',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+                onChanged: (value) {
+                  ref.read(serverConfigProvider.notifier).updateField(username: value);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                decoration: const InputDecoration(
+                  labelText: '密码',
+                  hintText: '请输入密码',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.lock),
+                ),
+                obscureText: true,
+                onChanged: (value) {
+                  ref.read(serverConfigProvider.notifier).updateField(password: value);
+                },
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _testConnection,
+                icon: const Icon(Icons.link),
+                label: const Text('尝试连接到服务器'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: '配置名称（可选）',
-              hintText: '留空则显示服务器地址',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.label),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _urlController,
-            decoration: const InputDecoration(
-              labelText: '服务器地址',
-              hintText: '请输入服务器地址',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.dns),
-            ),
-            keyboardType: TextInputType.url,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _usernameController,
-            decoration: const InputDecoration(
-              labelText: '用户名',
-              hintText: '请输入用户名',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _passwordController,
-            decoration: const InputDecoration(
-              labelText: '密码',
-              hintText: '请输入密码',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.lock),
-            ),
-            obscureText: true,
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _testConnection,
-            icon: const Icon(Icons.link),
-            label: const Text('尝试连接到服务器'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
+        );
+      },
     );
   }
 
   // 构建配置下拉选择器
-  Widget _buildConfigDropdown() {
-    if (_configList.configs.isEmpty) {
+  Widget _buildConfigDropdown(ServerConfigState state) {
+    if (state.configList.configs.isEmpty) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         decoration: BoxDecoration(
@@ -450,22 +315,22 @@ class _HomePageState extends State<HomePage> {
     }
 
     // 获取当前选中配置的显示名称
-    final currentDisplayName = _editingConfigId != null
-        ? _configList.configs
+    final currentDisplayName = state.editingConfigId != null
+        ? state.configList.configs
             .firstWhere(
-              (c) => c.id == _editingConfigId,
-              orElse: () => _configList.configs.first,
+              (c) => c.id == state.editingConfigId,
+              orElse: () => state.configList.configs.first,
             )
             .displayName
         : '选择配置';
 
     return PopupMenuButton<String>(
-      initialValue: _editingConfigId,
+      initialValue: state.editingConfigId,
       onSelected: (value) {
-        _switchConfig(value);
+        ref.read(serverConfigProvider.notifier).switchConfig(value);
       },
       itemBuilder: (context) {
-        return _configList.configs.map((config) {
+        return state.configList.configs.map((config) {
           return PopupMenuItem<String>(
             value: config.id,
             child: Text(
