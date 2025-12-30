@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:archive/archive.dart';
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:media_scanner/media_scanner.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
@@ -384,11 +386,23 @@ class _DebugPageState extends State<DebugPage> {
         },
       );
 
+      // 计算文件的 MD5
+      final fileMd5 = md5.convert(fileBytes).toString();
+      _log.d('文件 MD5: $fileMd5');
+
+      // 根据文件扩展名判断类型
+      final ext = p.extension(filename).toLowerCase(); // 返回 .jpg 格式
+      const imageExtensions = ['.jpg', '.jpeg', '.gif', '.bmp', '.png', '.heic', '.heif', '.webp', '.avif'];
+      final clipboardType = imageExtensions.contains(ext)
+          ? clipboard_model.ClipboardType.image
+          : clipboard_model.ClipboardType.file;
+      _log.d('文件类型: ${clipboardType.name}');
+
       // 4. 更新 SyncClipboard.json
       final clipboard = clipboard_model.Clipboard(
         file: filename,
-        clipboard: '',
-        type: clipboard_model.ClipboardType.file,
+        clipboard: fileMd5,
+        type: clipboardType,
       );
       await client.putSyncClipboardJson(clipboard);
 
