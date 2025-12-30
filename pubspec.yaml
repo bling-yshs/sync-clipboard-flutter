@@ -81,6 +81,8 @@ dependencies:
   flutter_markdown_plus: ^1.0.5
   # SHA256 计算
   crypto: ^3.0.7
+  # UUID 生成
+  uuid: ^4.5.2
 
 dev_dependencies:
   build_runner: ^2.10.4
