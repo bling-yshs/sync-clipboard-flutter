@@ -3,6 +3,11 @@
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
 
+### Added
+
+- 支持多服务器配置切换
+- 文件上传时添加 MD5 校验，从而符合 API 规范
+
 ## [0.2.2] - 2025-12-27
 
 ### Added
