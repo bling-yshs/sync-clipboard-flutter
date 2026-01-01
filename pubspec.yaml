@@ -58,7 +58,7 @@ dependencies:
   # 文件路径
   path_provider: ^2.1.5
   # deep_link
-  app_links: ^7.0.0
+#  app_links: ^7.0.0
   # toast
   fluttertoast: ^9.0.0
   # 动态主题色
@@ -83,6 +83,8 @@ dependencies:
   crypto: ^3.0.7
   # UUID 生成
   uuid: ^4.5.2
+  # 路径处理
+  path: ^1.9.1
 
 dev_dependencies:
   build_runner: ^2.10.4
