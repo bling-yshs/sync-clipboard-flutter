@@ -48,3 +48,7 @@ app.*.map.json
 
 node_modules/
 pnpm-lock.yaml
+
+# FVM Version Cache
+.fvm/
+/.claude/
