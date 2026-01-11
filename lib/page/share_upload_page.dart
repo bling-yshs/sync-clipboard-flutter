@@ -1,4 +1,3 @@
-import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -6,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// MethodChannel 用于从 Android 获取分享数据
 const _shareChannel = MethodChannel('com.yshs.sync_clipboard_flutter/share');
@@ -49,16 +49,18 @@ class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
       _log.d('收到分享文本，长度: ${sharedText.length}');
       
       // 创建 Clipboard 对象
-      final clipboard = clipboard_model.Clipboard(
-        file: '',
-        clipboard: sharedText,
-        type: clipboard_model.ClipboardType.text,
-      );
-      
+      final payload = buildTextClipboardPayload(sharedText);
+
       // 上传到服务器
       final client = await SyncClipboardClient.create();
       _log.i('开始上传到服务器: ${client.config.url}');
-      await client.putSyncClipboardJson(clipboard);
+      if (payload.hasDataFile) {
+        await client.putSyncClipboardFile(
+          payload.dataName!,
+          payload.dataBytes!,
+        );
+      }
+      await client.putSyncClipboardJson(payload.clipboard);
       
       _log.i('分享文本上传成功');
       
@@ -157,10 +159,6 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         },
       );
 
-      // 计算文件的 MD5
-      final fileMd5 = md5.convert(bytes).toString();
-      _log.d('文件 MD5: $fileMd5');
-
       // 根据文件扩展名判断类型
       final ext = p.extension(filename).toLowerCase(); // 返回 .jpg 格式
       const imageExtensions = ['.jpg', '.jpeg', '.gif', '.bmp', '.png', '.heic', '.heif', '.webp', '.avif'];
@@ -170,9 +168,9 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
       _log.d('文件类型: ${clipboardType.name}');
 
       // 更新 SyncClipboard.json
-      final clipboard = clipboard_model.Clipboard(
-        file: filename,
-        clipboard: fileMd5,
+      final clipboard = buildFileClipboard(
+        filename: filename,
+        bytes: bytes,
         type: clipboardType,
       );
       await client.putSyncClipboardJson(clipboard);

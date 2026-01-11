@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
-import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +14,7 @@ import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 class DebugPage extends StatefulWidget {
   const DebugPage({super.key});
@@ -104,16 +105,18 @@ class _DebugPageState extends State<DebugPage> {
       _log.d('读取到剪贴板内容，长度: ${clipboardText.length}');
       
       // 2. 创建 Clipboard 对象
-      final clipboard = clipboard_model.Clipboard(
-        file: '',  // 文本类型不需要文件路径
-        clipboard: clipboardText,
-        type: clipboard_model.ClipboardType.text,
-      );
-      
+      final payload = buildTextClipboardPayload(clipboardText);
+
       // 3. 上传到服务器
       final client = await SyncClipboardClient.create();
       _log.i('开始上传到服务器: ${client.config.url}');
-      await client.putSyncClipboardJson(clipboard);
+      if (payload.hasDataFile) {
+        await client.putSyncClipboardFile(
+          payload.dataName!,
+          payload.dataBytes!,
+        );
+      }
+      await client.putSyncClipboardJson(payload.clipboard);
       
       _log.i('上传剪贴板成功');
       
@@ -145,24 +148,34 @@ class _DebugPageState extends State<DebugPage> {
       _log.i('开始从服务器下载: ${client.config.url}');
       final clipboard = await client.getSyncClipboardJson();
       
-      _log.d('下载到剪贴板数据 - 类型: ${clipboard.type.name}, 内容长度: ${clipboard.clipboard.length}');
+      _log.d('下载到剪贴板数据 - 类型: ${clipboard.type.name}, 预览长度: ${clipboard.text.length}');
 
       // 2. 根据类型处理剪贴板数据
       switch (clipboard.type) {
         case clipboard_model.ClipboardType.text:
-        // 文本类型：将内容写入系统剪贴板
-          await Clipboard.setData(ClipboardData(text: clipboard.clipboard));
+          // 文本类型：必要时下载完整内容并校验 hash
+          var resolvedText = clipboard.text;
+          if (clipboard.hasData) {
+            final dataName = clipboard.dataName;
+            if (dataName == null || dataName.isEmpty) {
+              throw SyncClipboardException('缺少 dataName，无法下载文本内容');
+            }
+            final dataBytes = await client.getSyncClipboardFile(dataName);
+            resolvedText = utf8.decode(dataBytes);
+          }
+
+          await Clipboard.setData(ClipboardData(text: resolvedText));
           _log.i('已将文本写入系统剪贴板');
 
           Fluttertoast.showToast(
-            msg: '已将以下内容写入剪贴版:\n${clipboard.clipboard}',
+            msg: '已将以下内容写入剪贴版:\n$resolvedText',
           );
           break;
 
         case clipboard_model.ClipboardType.image:
         case clipboard_model.ClipboardType.file:
-        // 图片和文件类型：从服务器下载文件并保存到 Download 文件夹
-          final filename = clipboard.file;
+          // 图片和文件类型：从服务器下载文件并保存到 Download 文件夹
+          final filename = clipboard.dataName ?? '';
 
           if (filename.isEmpty) {
             _log.w('文件名为空，无法下载');
@@ -178,7 +191,7 @@ class _DebugPageState extends State<DebugPage> {
           // 获取唯一的文件名（如果存在同名文件，会自动添加 _1, _2, _3... 后缀）
           final uniqueFilename = await _getUniqueFilename(
               AppPaths.androidDownloadDir, filename);
-          
+
           // 保存文件到 Download 文件夹
           final downloadPath = '${AppPaths.androidDownloadDir}/$uniqueFilename';
           final file = File(downloadPath);
@@ -195,8 +208,8 @@ class _DebugPageState extends State<DebugPage> {
           break;
 
         case clipboard_model.ClipboardType.group:
-        // Group 类型：下载 zip 文件并解压到带时间戳的文件夹
-          final filename = clipboard.file;
+          // Group 类型：下载 zip 文件并解压到带时间戳的文件夹
+          final filename = clipboard.dataName ?? '';
 
           if (filename.isEmpty) {
             _log.w('文件名为空，无法下载');
@@ -386,10 +399,6 @@ class _DebugPageState extends State<DebugPage> {
         },
       );
 
-      // 计算文件的 MD5
-      final fileMd5 = md5.convert(fileBytes).toString();
-      _log.d('文件 MD5: $fileMd5');
-
       // 根据文件扩展名判断类型
       final ext = p.extension(filename).toLowerCase(); // 返回 .jpg 格式
       const imageExtensions = ['.jpg', '.jpeg', '.gif', '.bmp', '.png', '.heic', '.heif', '.webp', '.avif'];
@@ -399,9 +408,9 @@ class _DebugPageState extends State<DebugPage> {
       _log.d('文件类型: ${clipboardType.name}');
 
       // 4. 更新 SyncClipboard.json
-      final clipboard = clipboard_model.Clipboard(
-        file: filename,
-        clipboard: fileMd5,
+      final clipboard = buildFileClipboard(
+        filename: filename,
+        bytes: fileBytes,
         type: clipboardType,
       );
       await client.putSyncClipboardJson(clipboard);

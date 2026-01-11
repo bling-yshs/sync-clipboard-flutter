@@ -13,14 +13,19 @@ String clipboardToJson(Clipboard data) =>
 @freezed
 abstract class Clipboard with _$Clipboard {
   const factory Clipboard({
-    @JsonKey(name: 'File')
-    required String file,
-
-    @JsonKey(name: 'Clipboard')
-    required String clipboard,
-
-    @JsonKey(name: 'Type')
     required ClipboardType type,
+    @JsonKey(
+      fromJson: _hashFromJson,
+      toJson: _hashToJson,
+      includeIfNull: false,
+    )
+    String? hash,
+    required String text,
+    required bool hasData,
+    @JsonKey(includeIfNull: false)
+    String? dataName,
+    @JsonKey(includeIfNull: false)
+    int? size,
   }) = _Clipboard;
 
   factory Clipboard.fromJson(Map<String, dynamic> json) =>
@@ -41,4 +46,20 @@ enum ClipboardType {
 
   @JsonValue('Group')
   group,
+}
+
+String? _hashFromJson(Object? value) {
+  if (value == null) {
+    return null;
+  }
+  final hash = value.toString().trim();
+  return hash.isEmpty ? null : hash;
+}
+
+String? _hashToJson(String? value) {
+  if (value == null) {
+    return null;
+  }
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
