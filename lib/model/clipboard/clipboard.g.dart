@@ -7,16 +7,22 @@ part of 'clipboard.dart';
 // **************************************************************************
 
 _Clipboard _$ClipboardFromJson(Map<String, dynamic> json) => _Clipboard(
-  file: json['File'] as String,
-  clipboard: json['Clipboard'] as String,
-  type: $enumDecode(_$ClipboardTypeEnumMap, json['Type']),
+  type: $enumDecode(_$ClipboardTypeEnumMap, json['type']),
+  hash: _hashFromJson(json['hash']),
+  text: json['text'] as String,
+  hasData: json['hasData'] as bool,
+  dataName: json['dataName'] as String?,
+  size: (json['size'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ClipboardToJson(_Clipboard instance) =>
     <String, dynamic>{
-      'File': instance.file,
-      'Clipboard': instance.clipboard,
-      'Type': _$ClipboardTypeEnumMap[instance.type]!,
+      'type': _$ClipboardTypeEnumMap[instance.type]!,
+      'hash': ?_hashToJson(instance.hash),
+      'text': instance.text,
+      'hasData': instance.hasData,
+      'dataName': ?instance.dataName,
+      'size': ?instance.size,
     };
 
 const _$ClipboardTypeEnumMap = {

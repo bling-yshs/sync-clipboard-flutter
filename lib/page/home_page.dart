@@ -5,7 +5,7 @@ import 'package:sync_clipboard_flutter/model/server_config/server_config_state.d
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/provider/server_config_provider.dart';
 import 'package:logger/logger.dart';
-import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart';
+import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -147,7 +147,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       final clipboard = await client.getSyncClipboardJson();
 
       _log.d(
-          '成功获取剪贴板数据 - 类型: ${clipboard.type.name}, 内容长度: ${clipboard.clipboard.length}');
+          '成功获取剪贴板数据 - 类型: ${clipboard.type.name}, 预览长度: ${clipboard.text.length}');
 
       Fluttertoast.showToast(msg: '连接成功');
     } on SyncClipboardException catch (e) {
@@ -156,11 +156,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
         try {
           final client = await SyncClipboardClient.create();
-          final emptyClipboard = const Clipboard(
-            file: '',
-            clipboard: '',
-            type: ClipboardType.text,
-          );
+          final emptyClipboard = buildTextClipboardPayload('').clipboard;
           await client.putSyncClipboardJson(emptyClipboard);
 
           _log.i('成功创建空的 SyncClipboard.json 文件');

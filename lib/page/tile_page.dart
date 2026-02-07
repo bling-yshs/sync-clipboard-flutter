@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:media_scanner/media_scanner.dart';
 import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// 磁贴透明页面 - 上传剪贴板
 class TileUploadPage extends StatefulWidget {
@@ -66,16 +68,18 @@ class _TileUploadPageState extends State<TileUploadPage> {
       _log.d('读取到剪贴板内容，长度: ${clipboardText.length}');
       
       // 2. 创建 Clipboard 对象
-      final clipboard = clipboard_model.Clipboard(
-        file: '',
-        clipboard: clipboardText,
-        type: clipboard_model.ClipboardType.text,
-      );
-      
+      final payload = buildTextClipboardPayload(clipboardText);
+
       // 3. 上传到服务器
       final client = await SyncClipboardClient.create();
       _log.i('开始上传到服务器: ${client.config.url}');
-      await client.putSyncClipboardJson(clipboard);
+      if (payload.hasDataFile) {
+        await client.putSyncClipboardFile(
+          payload.dataName!,
+          payload.dataBytes!,
+        );
+      }
+      await client.putSyncClipboardJson(payload.clipboard);
       
       _log.i('上传剪贴板成功');
       
@@ -177,18 +181,28 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
       _log.i('开始从服务器下载: ${client.config.url}');
       final clipboard = await client.getSyncClipboardJson();
       
-      _log.d('下载到剪贴板数据 - 类型: ${clipboard.type.name}, 内容长度: ${clipboard.clipboard.length}');
+      _log.d('下载到剪贴板数据 - 类型: ${clipboard.type.name}, 预览长度: ${clipboard.text.length}');
 
       // 2. 根据类型处理剪贴板数据
       switch (clipboard.type) {
         case clipboard_model.ClipboardType.text:
-          // 文本类型：将内容写入系统剪贴板
-          await Clipboard.setData(ClipboardData(text: clipboard.clipboard));
+          // 文本类型：必要时下载完整内容并校验 hash
+          var resolvedText = clipboard.text;
+          if (clipboard.hasData) {
+            final dataName = clipboard.dataName;
+            if (dataName == null || dataName.isEmpty) {
+              throw SyncClipboardException('缺少 dataName，无法下载文本内容');
+            }
+            final dataBytes = await client.getSyncClipboardFile(dataName);
+            resolvedText = utf8.decode(dataBytes);
+          }
+
+          await Clipboard.setData(ClipboardData(text: resolvedText));
           _log.i('已将文本写入系统剪贴板');
 
           // 显示成功提示并立即退出
           Fluttertoast.showToast(
-            msg: '已将以下内容写入剪贴版:\n${clipboard.clipboard}',
+            msg: '已将以下内容写入剪贴版:\n$resolvedText',
           );
           SystemNavigator.pop();
           break;
@@ -196,7 +210,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
         case clipboard_model.ClipboardType.image:
         case clipboard_model.ClipboardType.file:
           // 图片和文件类型：从服务器下载文件并保存到 Download 文件夹
-          final filename = clipboard.file;
+          final filename = clipboard.dataName ?? '';
 
           if (filename.isEmpty) {
             _log.w('文件名为空，无法下载');
@@ -228,7 +242,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 
           // 获取唯一的文件名
           final uniqueFilename = await _getUniqueFilename(AppPaths.androidDownloadDir, filename);
-          
+
           // 保存文件到 Download 文件夹
           final downloadPath = '${AppPaths.androidDownloadDir}/$uniqueFilename';
           final file = File(downloadPath);
@@ -248,7 +262,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 
         case clipboard_model.ClipboardType.group:
           // Group 类型：下载 zip 文件并解压到带时间戳的文件夹
-          final filename = clipboard.file;
+          final filename = clipboard.dataName ?? '';
 
           if (filename.isEmpty) {
             _log.w('文件名为空，无法下载');

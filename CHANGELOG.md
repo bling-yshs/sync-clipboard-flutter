@@ -3,6 +3,13 @@
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
 
+### Changed
+
+- ⚠ 破坏性更新
+- 适配新版本 SyncClipboard，仅能与 v3.1.1 及以上版本搭配使用
+
+## [0.2.3] - 2026-01-05
+
 ### Added
 
 - 支持多服务器配置切换
@@ -56,7 +63,8 @@
 
 - 第一次正式发布 sync-clipboard-tauri
 
-[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.2.2...HEAD
+[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.3
 [0.2.2]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.2
 [0.2.1]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.1
 [0.1.3]: https://github.com/bling-yshs/sync-clipboard-tauri/commits/v0.1.3
