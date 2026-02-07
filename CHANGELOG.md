@@ -2,6 +2,12 @@
 
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
+
+### Changed
+
+- ⚠ 破坏性更新
+- 适配新版本 SyncClipboard，仅能与 v3.1.1 及以上版本搭配使用
+
 ## [0.2.3] - 2026-01-05
 
 ### Added
