@@ -222,7 +222,7 @@ class SyncClipboardClient {
   /// 获取同步剪贴板中的文件数据
   /// 
   /// 参数：
-  /// - [filename] 文件名（从 Clipboard 对象的 file 字段获取）
+  /// - [filename] 文件名（从 Clipboard 对象的 dataName 字段获取）
   /// - [onReceiveProgress] 可选的下载进度回调
   ///   - 参数1：已接收字节数
   ///   - 参数2：总字节数（-1 表示未知）

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Clipboard {
 
-@JsonKey(name: 'File') String get file;@JsonKey(name: 'Clipboard') String get clipboard;@JsonKey(name: 'Type') ClipboardType get type;
+@JsonKey(name: 'type') ClipboardType get type;@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? get hash;@JsonKey(name: 'text') String get text;@JsonKey(name: 'hasData') bool get hasData;@JsonKey(name: 'dataName', includeIfNull: false) String? get dataName;@JsonKey(name: 'size', includeIfNull: false) int? get size;
 /// Create a copy of Clipboard
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $ClipboardCopyWith<Clipboard> get copyWith => _$ClipboardCopyWithImpl<Clipboard>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Clipboard&&(identical(other.file, file) || other.file == file)&&(identical(other.clipboard, clipboard) || other.clipboard == clipboard)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Clipboard&&(identical(other.type, type) || other.type == type)&&(identical(other.hash, hash) || other.hash == hash)&&(identical(other.text, text) || other.text == text)&&(identical(other.hasData, hasData) || other.hasData == hasData)&&(identical(other.dataName, dataName) || other.dataName == dataName)&&(identical(other.size, size) || other.size == size));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,file,clipboard,type);
+int get hashCode => Object.hash(runtimeType,type,hash,text,hasData,dataName,size);
 
 @override
 String toString() {
-  return 'Clipboard(file: $file, clipboard: $clipboard, type: $type)';
+  return 'Clipboard(type: $type, hash: $hash, text: $text, hasData: $hasData, dataName: $dataName, size: $size)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $ClipboardCopyWith<$Res>  {
   factory $ClipboardCopyWith(Clipboard value, $Res Function(Clipboard) _then) = _$ClipboardCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'File') String file,@JsonKey(name: 'Clipboard') String clipboard,@JsonKey(name: 'Type') ClipboardType type
+@JsonKey(name: 'type') ClipboardType type,@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? hash,@JsonKey(name: 'text') String text,@JsonKey(name: 'hasData') bool hasData,@JsonKey(name: 'dataName', includeIfNull: false) String? dataName,@JsonKey(name: 'size', includeIfNull: false) int? size
 });
 
 
@@ -65,12 +65,15 @@ class _$ClipboardCopyWithImpl<$Res>
 
 /// Create a copy of Clipboard
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? file = null,Object? clipboard = null,Object? type = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? hash = freezed,Object? text = null,Object? hasData = null,Object? dataName = freezed,Object? size = freezed,}) {
   return _then(_self.copyWith(
-file: null == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
-as String,clipboard: null == clipboard ? _self.clipboard : clipboard // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as ClipboardType,
+type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as ClipboardType,hash: freezed == hash ? _self.hash : hash // ignore: cast_nullable_to_non_nullable
+as String?,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,hasData: null == hasData ? _self.hasData : hasData // ignore: cast_nullable_to_non_nullable
+as bool,dataName: freezed == dataName ? _self.dataName : dataName // ignore: cast_nullable_to_non_nullable
+as String?,size: freezed == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -155,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'File')  String file, @JsonKey(name: 'Clipboard')  String clipboard, @JsonKey(name: 'Type')  ClipboardType type)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'type')  ClipboardType type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash, @JsonKey(name: 'text')  String text, @JsonKey(name: 'hasData')  bool hasData, @JsonKey(name: 'dataName', includeIfNull: false)  String? dataName, @JsonKey(name: 'size', includeIfNull: false)  int? size)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Clipboard() when $default != null:
-return $default(_that.file,_that.clipboard,_that.type);case _:
+return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_that.size);case _:
   return orElse();
 
 }
@@ -176,10 +179,10 @@ return $default(_that.file,_that.clipboard,_that.type);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'File')  String file, @JsonKey(name: 'Clipboard')  String clipboard, @JsonKey(name: 'Type')  ClipboardType type)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'type')  ClipboardType type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash, @JsonKey(name: 'text')  String text, @JsonKey(name: 'hasData')  bool hasData, @JsonKey(name: 'dataName', includeIfNull: false)  String? dataName, @JsonKey(name: 'size', includeIfNull: false)  int? size)  $default,) {final _that = this;
 switch (_that) {
 case _Clipboard():
-return $default(_that.file,_that.clipboard,_that.type);case _:
+return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_that.size);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +199,10 @@ return $default(_that.file,_that.clipboard,_that.type);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'File')  String file, @JsonKey(name: 'Clipboard')  String clipboard, @JsonKey(name: 'Type')  ClipboardType type)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'type')  ClipboardType type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash, @JsonKey(name: 'text')  String text, @JsonKey(name: 'hasData')  bool hasData, @JsonKey(name: 'dataName', includeIfNull: false)  String? dataName, @JsonKey(name: 'size', includeIfNull: false)  int? size)?  $default,) {final _that = this;
 switch (_that) {
 case _Clipboard() when $default != null:
-return $default(_that.file,_that.clipboard,_that.type);case _:
+return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_that.size);case _:
   return null;
 
 }
@@ -211,12 +214,15 @@ return $default(_that.file,_that.clipboard,_that.type);case _:
 @JsonSerializable()
 
 class _Clipboard implements Clipboard {
-  const _Clipboard({@JsonKey(name: 'File') required this.file, @JsonKey(name: 'Clipboard') required this.clipboard, @JsonKey(name: 'Type') required this.type});
+  const _Clipboard({@JsonKey(name: 'type') required this.type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) this.hash, @JsonKey(name: 'text') required this.text, @JsonKey(name: 'hasData') required this.hasData, @JsonKey(name: 'dataName', includeIfNull: false) this.dataName, @JsonKey(name: 'size', includeIfNull: false) this.size});
   factory _Clipboard.fromJson(Map<String, dynamic> json) => _$ClipboardFromJson(json);
 
-@override@JsonKey(name: 'File') final  String file;
-@override@JsonKey(name: 'Clipboard') final  String clipboard;
-@override@JsonKey(name: 'Type') final  ClipboardType type;
+@override@JsonKey(name: 'type') final  ClipboardType type;
+@override@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) final  String? hash;
+@override@JsonKey(name: 'text') final  String text;
+@override@JsonKey(name: 'hasData') final  bool hasData;
+@override@JsonKey(name: 'dataName', includeIfNull: false) final  String? dataName;
+@override@JsonKey(name: 'size', includeIfNull: false) final  int? size;
 
 /// Create a copy of Clipboard
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Clipboard&&(identical(other.file, file) || other.file == file)&&(identical(other.clipboard, clipboard) || other.clipboard == clipboard)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Clipboard&&(identical(other.type, type) || other.type == type)&&(identical(other.hash, hash) || other.hash == hash)&&(identical(other.text, text) || other.text == text)&&(identical(other.hasData, hasData) || other.hasData == hasData)&&(identical(other.dataName, dataName) || other.dataName == dataName)&&(identical(other.size, size) || other.size == size));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,file,clipboard,type);
+int get hashCode => Object.hash(runtimeType,type,hash,text,hasData,dataName,size);
 
 @override
 String toString() {
-  return 'Clipboard(file: $file, clipboard: $clipboard, type: $type)';
+  return 'Clipboard(type: $type, hash: $hash, text: $text, hasData: $hasData, dataName: $dataName, size: $size)';
 }
 
 
@@ -251,7 +257,7 @@ abstract mixin class _$ClipboardCopyWith<$Res> implements $ClipboardCopyWith<$Re
   factory _$ClipboardCopyWith(_Clipboard value, $Res Function(_Clipboard) _then) = __$ClipboardCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'File') String file,@JsonKey(name: 'Clipboard') String clipboard,@JsonKey(name: 'Type') ClipboardType type
+@JsonKey(name: 'type') ClipboardType type,@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? hash,@JsonKey(name: 'text') String text,@JsonKey(name: 'hasData') bool hasData,@JsonKey(name: 'dataName', includeIfNull: false) String? dataName,@JsonKey(name: 'size', includeIfNull: false) int? size
 });
 
 
@@ -268,12 +274,15 @@ class __$ClipboardCopyWithImpl<$Res>
 
 /// Create a copy of Clipboard
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? file = null,Object? clipboard = null,Object? type = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? hash = freezed,Object? text = null,Object? hasData = null,Object? dataName = freezed,Object? size = freezed,}) {
   return _then(_Clipboard(
-file: null == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
-as String,clipboard: null == clipboard ? _self.clipboard : clipboard // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as ClipboardType,
+type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
+as ClipboardType,hash: freezed == hash ? _self.hash : hash // ignore: cast_nullable_to_non_nullable
+as String?,text: null == text ? _self.text : text // ignore: cast_nullable_to_non_nullable
+as String,hasData: null == hasData ? _self.hasData : hasData // ignore: cast_nullable_to_non_nullable
+as bool,dataName: freezed == dataName ? _self.dataName : dataName // ignore: cast_nullable_to_non_nullable
+as String?,size: freezed == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
