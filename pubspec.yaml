@@ -63,8 +63,6 @@ dependencies:
   fluttertoast: ^9.0.0
   # 动态主题色
   dynamic_color: ^1.8.1
-  # 媒体扫描
-  media_scanner: ^2.2.0
   # zip 压缩
   archive: ^4.0.7
   # 日期格式化

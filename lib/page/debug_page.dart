@@ -1,19 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:archive/archive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:media_scanner/media_scanner.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 class DebugPage extends StatefulWidget {
@@ -31,59 +29,6 @@ class _DebugPageState extends State<DebugPage> {
   bool _isUploading = false;
   double _uploadProgress = 0.0;
   String _uploadingFileName = '';
-
-  /// 获取唯一的文件名，如果存在同名文件则在文件名后添加 _1, _2, _3...
-  /// 
-  /// 例如：
-  /// - 如果 test.txt 已存在，返回 test_1.txt
-  /// - 如果 test_1.txt 也存在，返回 test_2.txt
-  /// - 以此类推
-  Future<String> _getUniqueFilename(String directory,
-      String originalFilename) async {
-    // 分离文件名和扩展名
-    final lastDotIndex = originalFilename.lastIndexOf('.');
-    String baseName;
-    String extension;
-    
-    if (lastDotIndex != -1 && lastDotIndex > 0) {
-      // 有扩展名的情况，例如 "test.txt"
-      baseName = originalFilename.substring(0, lastDotIndex);
-      extension = originalFilename.substring(lastDotIndex); // 包含点号，例如 ".txt"
-    } else {
-      // 没有扩展名的情况
-      baseName = originalFilename;
-      extension = '';
-    }
-    
-    // 检查原始文件名是否存在
-    String candidatePath = '$directory/$originalFilename';
-    if (!await File(candidatePath).exists()) {
-      _log.d('文件不存在，使用原始文件名: $originalFilename');
-      return originalFilename;
-    }
-    
-    // 文件存在，尝试添加递增数字后缀
-    int counter = 1;
-    while (true) {
-      final newFilename = '${baseName}_$counter$extension';
-      candidatePath = '$directory/$newFilename';
-
-      if (!await File(candidatePath).exists()) {
-        _log.i('找到可用文件名: $newFilename (原文件名: $originalFilename)');
-        return newFilename;
-      }
-      
-      counter++;
-      
-      // 安全检查：避免无限循环（虽然理论上不太可能）
-      if (counter > 99) {
-        _log.w('文件重命名尝试次数过多，使用时间戳');
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        return '${baseName}_$timestamp$extension';
-      }
-    }
-  }
-
 
   // 上传剪贴板
   Future<void> _uploadClipboard() async {
@@ -188,22 +133,15 @@ class _DebugPageState extends State<DebugPage> {
           _log.i('开始下载文件: $filename');
           final fileBytes = await client.getSyncClipboardFile(filename);
 
-          // 获取唯一的文件名（如果存在同名文件，会自动添加 _1, _2, _3... 后缀）
-          final uniqueFilename = await _getUniqueFilename(
-              AppPaths.androidDownloadDir, filename);
-
-          // 保存文件到 Download 文件夹
-          final downloadPath = '${AppPaths.androidDownloadDir}/$uniqueFilename';
-          final file = File(downloadPath);
-          await file.writeAsBytes(fileBytes);
-
-          // 通知 Android 系统扫描文件
-          await MediaScanner.loadMedia(path: downloadPath);
-
-          _log.i('文件已下载到 Download 文件夹: $downloadPath');
+          final saved = await DownloadsSaveService.saveBytesToDownloads(
+            bytes: fileBytes,
+            fileName: filename,
+          );
+          final savedName = saved.displayName ?? filename;
+          _log.i('文件已下载到 Download 文件夹: $savedName, uri: ${saved.uri}');
 
           Fluttertoast.showToast(
-            msg: '文件已下载到 Download 文件夹\n$uniqueFilename',
+            msg: '文件已下载到 Download 文件夹\n$savedName',
           );
           break;
 
@@ -226,36 +164,14 @@ class _DebugPageState extends State<DebugPage> {
           final now = DateTime.now();
           final formatter = DateFormat('yyyy-MM-dd_HH-mm-ss');
           final folderName = 'SyncClipboard_${formatter.format(now)}';
-          final extractPath = '${AppPaths.androidDownloadDir}/$folderName';
-
-          // 创建解压目标文件夹
-          final extractDir = Directory(extractPath);
-          await extractDir.create(recursive: true);
-          _log.i('创建解压目录: $extractPath');
 
           // 解压 zip 文件
           try {
-            final archive = ZipDecoder().decodeBytes(fileBytes);
-
-            for (final file in archive) {
-              final filePath = '$extractPath/${file.name}';
-
-              if (file.isFile) {
-                final outFile = File(filePath);
-                await outFile.create(recursive: true);
-                await outFile.writeAsBytes(file.content as List<int>);
-                _log.d('解压文件: ${file.name}');
-              } else {
-                // 创建目录
-                await Directory(filePath).create(recursive: true);
-                _log.d('创建目录: ${file.name}');
-              }
-            }
-
-            _log.i('解压完成，共 ${archive.length} 个文件/文件夹');
-
-            // 通知 Android 系统扫描整个文件夹
-            await MediaScanner.loadMedia(path: extractPath);
+            await DownloadsSaveService.extractZipToDownloads(
+              zipBytes: fileBytes,
+              rootFolderName: folderName,
+            );
+            _log.i('解压完成，文件已保存到 Download/$folderName');
 
             Fluttertoast.showToast(
               msg: '已解压到 Download 文件夹\n$folderName',

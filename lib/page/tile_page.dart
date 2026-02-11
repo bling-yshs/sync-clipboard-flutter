@@ -1,15 +1,12 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:media_scanner/media_scanner.dart';
-import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// 磁贴透明页面 - 上传剪贴板
@@ -138,40 +135,6 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
     _downloadClipboard();
   }
 
-  /// 获取唯一的文件名
-  Future<String> _getUniqueFilename(String directory, String originalFilename) async {
-    final lastDotIndex = originalFilename.lastIndexOf('.');
-    String baseName;
-    String extension;
-    
-    if (lastDotIndex != -1 && lastDotIndex > 0) {
-      baseName = originalFilename.substring(0, lastDotIndex);
-      extension = originalFilename.substring(lastDotIndex);
-    } else {
-      baseName = originalFilename;
-      extension = '';
-    }
-    
-    String candidatePath = '$directory/$originalFilename';
-    if (!await File(candidatePath).exists()) {
-      return originalFilename;
-    }
-    
-    int counter = 1;
-    while (true) {
-      final newFilename = '${baseName}_$counter$extension';
-      candidatePath = '$directory/$newFilename';
-      if (!await File(candidatePath).exists()) {
-        return newFilename;
-      }
-      counter++;
-      if (counter > 99) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        return '${baseName}_$timestamp$extension';
-      }
-    }
-  }
-
   Future<void> _downloadClipboard() async {
     try {
       _log.i('开始下载剪贴板...');
@@ -240,22 +203,16 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
             },
           );
 
-          // 获取唯一的文件名
-          final uniqueFilename = await _getUniqueFilename(AppPaths.androidDownloadDir, filename);
-
-          // 保存文件到 Download 文件夹
-          final downloadPath = '${AppPaths.androidDownloadDir}/$uniqueFilename';
-          final file = File(downloadPath);
-          await file.writeAsBytes(fileBytes);
-
-          // 通知 Android 系统扫描文件
-          await MediaScanner.loadMedia(path: downloadPath);
-
-          _log.i('文件已下载到 Download 文件夹: $downloadPath');
+          final saved = await DownloadsSaveService.saveBytesToDownloads(
+            bytes: fileBytes,
+            fileName: filename,
+          );
+          final savedName = saved.displayName ?? filename;
+          _log.i('文件已下载到 Download 文件夹: $savedName, uri: ${saved.uri}');
 
           // 显示成功提示并立即退出
           Fluttertoast.showToast(
-            msg: '文件已下载到 Download 文件夹\n$uniqueFilename',
+            msg: '文件已下载到 Download 文件夹\n$savedName',
           );
           SystemNavigator.pop();
           break;
@@ -301,35 +258,14 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
           final now = DateTime.now();
           final formatter = DateFormat('yyyy-MM-dd_HH-mm-ss');
           final folderName = 'SyncClipboard_${formatter.format(now)}';
-          final extractPath = '${AppPaths.androidDownloadDir}/$folderName';
-
-          // 创建解压目标文件夹
-          final extractDir = Directory(extractPath);
-          await extractDir.create(recursive: true);
-          _log.i('创建解压目录: $extractPath');
 
           // 解压 zip 文件
           try {
-            final archive = ZipDecoder().decodeBytes(fileBytes);
-
-            for (final file in archive) {
-              final filePath = '$extractPath/${file.name}';
-
-              if (file.isFile) {
-                final outFile = File(filePath);
-                await outFile.create(recursive: true);
-                await outFile.writeAsBytes(file.content as List<int>);
-                _log.d('解压文件: ${file.name}');
-              } else {
-                await Directory(filePath).create(recursive: true);
-                _log.d('创建目录: ${file.name}');
-              }
-            }
-
-            _log.i('解压完成，共 ${archive.length} 个文件/文件夹');
-
-            // 通知 Android 系统扫描整个文件夹
-            await MediaScanner.loadMedia(path: extractPath);
+            await DownloadsSaveService.extractZipToDownloads(
+              zipBytes: fileBytes,
+              rootFolderName: folderName,
+            );
+            _log.i('解压完成，文件已保存到 Download/$folderName');
 
             // 显示成功提示并立即退出
             Fluttertoast.showToast(

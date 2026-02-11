@@ -66,7 +66,8 @@ class TileActionActivity : FlutterActivity() {
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        
+        DownloadsSaveChannel.register(flutterEngine, this)
+
         // 注册 MethodChannel 让 Flutter 获取分享数据
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
