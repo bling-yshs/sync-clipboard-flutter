@@ -2,6 +2,15 @@
 
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
+
+### Fixed
+
+- 修复部分系统保存文件到下载文件夹时无权限
+
+### Changed
+
+- ⚠ v0.3.0 后仅能与 SyncClipboard v3.1.1 及以上版本搭配使用
+
 ## [0.3.0] - 2026-02-07
 
 ### Changed
