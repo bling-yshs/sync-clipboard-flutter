@@ -4,7 +4,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
-import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
+    as clipboard_model;
+import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// MethodChannel 用于从 Android 获取分享数据
@@ -19,7 +21,7 @@ class ShareTextUploadPage extends StatefulWidget {
 }
 
 class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在上传分享的文本...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -33,10 +35,12 @@ class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
   Future<void> _uploadSharedText() async {
     try {
       _log.i('开始获取分享的文本...');
-      
+
       // 从 Android 获取分享的文本
-      final sharedText = await _shareChannel.invokeMethod<String>('getSharedText');
-      
+      final sharedText = await _shareChannel.invokeMethod<String>(
+        'getSharedText',
+      );
+
       if (sharedText == null || sharedText.isEmpty) {
         setState(() {
           _message = '没有收到分享的文本';
@@ -45,9 +49,9 @@ class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
         });
         return;
       }
-      
+
       _log.d('收到分享文本，长度: ${sharedText.length}');
-      
+
       // 创建 Clipboard 对象
       final payload = buildTextClipboardPayload(sharedText);
 
@@ -61,20 +65,20 @@ class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
         );
       }
       await client.putSyncClipboardJson(payload.clipboard);
-      
+
       _log.i('分享文本上传成功');
-      
+
       Fluttertoast.showToast(msg: '分享文本上传成功！🎉');
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
-      _log.e('上传失败 - 业务异常', error: e);
+      _log.e('上传失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
         _hasError = true;
       });
     } catch (e) {
-      _log.e('上传失败 - 未知错误', error: e);
+      _log.e('上传失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;
@@ -103,7 +107,7 @@ class ShareFileUploadPage extends StatefulWidget {
 }
 
 class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在上传分享的文件...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -119,10 +123,10 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
   Future<void> _uploadSharedFile() async {
     try {
       _log.i('开始获取分享的文件...');
-      
+
       // 从 Android 获取分享的文件
       final result = await _shareChannel.invokeMethod<Map>('getSharedFile');
-      
+
       if (result == null) {
         setState(() {
           _message = '没有收到分享的文件';
@@ -131,21 +135,21 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         });
         return;
       }
-      
+
       final filename = result['filename'] as String;
       final bytes = result['bytes'] as Uint8List;
-      
+
       _log.d('收到分享文件: $filename, 大小: ${bytes.length} bytes');
-      
+
       setState(() {
         _message = '正在上传: $filename';
         _showProgress = true;
       });
-      
+
       // 上传文件
       final client = await SyncClipboardClient.create();
       _log.i('开始上传文件到服务器: ${client.config.url}');
-      
+
       await client.putSyncClipboardFile(
         filename,
         bytes,
@@ -153,7 +157,8 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
           if (total != -1) {
             setState(() {
               _uploadProgress = sent / total;
-              _message = '正在上传：${(sent / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
+              _message =
+                  '正在上传：${(sent / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
             });
           }
         },
@@ -161,7 +166,17 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
 
       // 根据文件扩展名判断类型
       final ext = p.extension(filename).toLowerCase(); // 返回 .jpg 格式
-      const imageExtensions = ['.jpg', '.jpeg', '.gif', '.bmp', '.png', '.heic', '.heif', '.webp', '.avif'];
+      const imageExtensions = [
+        '.jpg',
+        '.jpeg',
+        '.gif',
+        '.bmp',
+        '.png',
+        '.heic',
+        '.heif',
+        '.webp',
+        '.avif',
+      ];
       final clipboardType = imageExtensions.contains(ext)
           ? clipboard_model.ClipboardType.image
           : clipboard_model.ClipboardType.file;
@@ -174,13 +189,13 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         type: clipboardType,
       );
       await client.putSyncClipboardJson(clipboard);
-      
+
       _log.i('分享文件上传成功: $filename');
-      
+
       Fluttertoast.showToast(msg: '文件上传成功！\n$filename');
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
-      _log.e('上传失败 - 业务异常', error: e);
+      _log.e('上传失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
@@ -188,7 +203,7 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         _showProgress = false;
       });
     } catch (e) {
-      _log.e('上传失败 - 未知错误', error: e);
+      _log.e('上传失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;
@@ -288,7 +303,9 @@ class _ShareOverlayPage extends StatelessWidget {
                       LinearProgressIndicator(
                         value: uploadProgress,
                         backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
