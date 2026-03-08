@@ -154,7 +154,9 @@ void _addParentDirectories(Set<String> entryNames, String entryName) {
 int _compareByUtf8Bytes(String a, String b) {
   final aBytes = utf8.encode(a);
   final bBytes = utf8.encode(b);
-  final minLength = aBytes.length < bBytes.length ? aBytes.length : bBytes.length;
+  final minLength = aBytes.length < bBytes.length
+      ? aBytes.length
+      : bBytes.length;
   for (var i = 0; i < minLength; i++) {
     final diff = aBytes[i] - bBytes[i];
     if (diff != 0) {

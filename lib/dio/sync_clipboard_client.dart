@@ -20,7 +20,7 @@ class SyncClipboardClient {
       BaseOptions(
         baseUrl: _normalizeBaseUrl(config.url),
         connectTimeout: const Duration(seconds: 5),
-        sendTimeout: const Duration(minutes: 10),  // 上传大文件需要更长时间
+        sendTimeout: const Duration(minutes: 10), // 上传大文件需要更长时间
         receiveTimeout: const Duration(minutes: 5), // 下载大文件需要更长时间
         validateStatus: (status) => status != null && status < 500,
       ),
@@ -44,9 +44,8 @@ class SyncClipboardClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          final basicAuth = 'Basic ${base64Encode(
-            utf8.encode('${config.username}:${config.password}'),
-          )}';
+          final basicAuth =
+              'Basic ${base64Encode(utf8.encode('${config.username}:${config.password}'))}';
           options.headers['Authorization'] = basicAuth;
           return handler.next(options);
         },
@@ -57,13 +56,19 @@ class SyncClipboardClient {
   /// 创建客户端实例（从 SharedPreferences 自动加载配置）
   /// 会自动读取 AppSettings 中的 trustInsecureCert 设置
   static Future<SyncClipboardClient> create() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // 使用新服务获取激活配置
     final config = await ServerConfigService.getActiveConfig();
     if (config == null) {
       throw SyncClipboardException('未配置服务器，请先添加服务器配置');
     }
+
+    return createWithConfig(config);
+  }
+
+  /// 基于指定配置创建客户端
+  static Future<SyncClipboardClient> createWithConfig(
+    ServerConfig config,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
 
     // 加载应用设置
     final settingsJson = prefs.getString('app_settings');
@@ -71,7 +76,10 @@ class SyncClipboardClient {
         ? appSettingsFromJson(settingsJson)
         : const AppSettings();
 
-    return SyncClipboardClient._(config, trustInsecureCert: settings.trustInsecureCert);
+    return SyncClipboardClient._(
+      config,
+      trustInsecureCert: settings.trustInsecureCert,
+    );
   }
 
   /// 规范化 Base URL，确保以 / 结尾
@@ -81,11 +89,11 @@ class SyncClipboardClient {
   }
 
   /// 获取 SyncClipboard.json 的内容
-  /// 
-  /// 返回值：  
+  ///
+  /// 返回值：
   /// - 成功时返回 Clipboard 对象
   /// - 失败时抛出异常
-  /// 
+  ///
   /// 可能抛出的异常：
   /// - [DioException] 网络请求异常
   /// - [SyncClipboardException] 业务逻辑异常
@@ -100,16 +108,10 @@ class SyncClipboardClient {
         } else if (response.data is String) {
           return clipboardFromJson(response.data as String);
         } else {
-          throw SyncClipboardException(
-            '响应数据格式错误',
-            statusCode: 200,
-          );
+          throw SyncClipboardException('响应数据格式错误', statusCode: 200);
         }
       } else if (response.statusCode == 401) {
-        throw SyncClipboardException(
-          '认证失败：用户名或密码错误',
-          statusCode: 401,
-        );
+        throw SyncClipboardException('认证失败：用户名或密码错误', statusCode: 401);
       } else if (response.statusCode == 404) {
         throw SyncClipboardException(
           '文件不存在：SyncClipboard.json 未找到',
@@ -127,14 +129,14 @@ class SyncClipboardClient {
   }
 
   /// 上传/更新 SyncClipboard.json 的内容
-  /// 
+  ///
   /// 参数：
   /// - [clipboard] 要上传的 Clipboard 对象
-  /// 
+  ///
   /// 返回值：
   /// - 成功时返回 true
   /// - 失败时抛出异常
-  /// 
+  ///
   /// 可能抛出的异常：
   /// - [DioException] 网络请求异常
   /// - [SyncClipboardException] 业务逻辑异常
@@ -143,19 +145,16 @@ class SyncClipboardClient {
       final response = await _dio.put(
         'SyncClipboard.json',
         data: clipboard.toJson(),
-        options: Options(
-          contentType: 'application/json',
-        ),
+        options: Options(contentType: 'application/json'),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
         // 200 OK, 201 Created, 204 No Content 都表示成功
         return true;
       } else if (response.statusCode == 401) {
-        throw SyncClipboardException(
-          '认证失败：用户名或密码错误',
-          statusCode: 401,
-        );
+        throw SyncClipboardException('认证失败：用户名或密码错误', statusCode: 401);
       } else {
         throw SyncClipboardException(
           '上传失败：HTTP ${response.statusCode}',
@@ -168,18 +167,18 @@ class SyncClipboardClient {
   }
 
   /// 上传文件到服务器（WebDAV PUT）
-  /// 
+  ///
   /// 参数：
   /// - [filename] 要保存的文件名
   /// - [fileBytes] 文件字节数据
   /// - [onSendProgress] 可选的上传进度回调
   ///   - 参数1：已发送字节数
   ///   - 参数2：总字节数
-  /// 
+  ///
   /// 返回值：
   /// - 成功时返回 true
   /// - 失败时抛出异常
-  /// 
+  ///
   /// 可能抛出的异常：
   /// - [DioException] 网络请求异常
   /// - [SyncClipboardException] 业务逻辑异常
@@ -195,20 +194,17 @@ class SyncClipboardClient {
         data: fileBytes,
         options: Options(
           contentType: 'application/octet-stream',
-          headers: {
-            'Content-Length': fileBytes.length,
-          },
+          headers: {'Content-Length': fileBytes.length},
         ),
         onSendProgress: onSendProgress,
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
         return true;
       } else if (response.statusCode == 401) {
-        throw SyncClipboardException(
-          '认证失败：用户名或密码错误',
-          statusCode: 401,
-        );
+        throw SyncClipboardException('认证失败：用户名或密码错误', statusCode: 401);
       } else {
         throw SyncClipboardException(
           '上传失败：HTTP ${response.statusCode}',
@@ -219,18 +215,19 @@ class SyncClipboardClient {
       throw _handleDioException(e);
     }
   }
+
   /// 获取同步剪贴板中的文件数据
-  /// 
+  ///
   /// 参数：
   /// - [filename] 文件名（从 Clipboard 对象的 dataName 字段获取）
   /// - [onReceiveProgress] 可选的下载进度回调
   ///   - 参数1：已接收字节数
   ///   - 参数2：总字节数（-1 表示未知）
-  /// 
+  ///
   /// 返回值：
-/// - 成功时返回文件的字节数据 `List<int>`
+  /// - 成功时返回文件的字节数据 `List<int>`
   /// - 失败时抛出异常
-  /// 
+  ///
   /// 可能抛出的异常：
   /// - [DioException] 网络请求异常
   /// - [SyncClipboardException] 业务逻辑异常
@@ -241,24 +238,16 @@ class SyncClipboardClient {
     try {
       final response = await _dio.get(
         'file/$filename',
-        options: Options(
-          responseType: ResponseType.bytes,
-        ),
+        options: Options(responseType: ResponseType.bytes),
         onReceiveProgress: onReceiveProgress,
       );
 
       if (response.statusCode == 200) {
         return response.data as List<int>;
       } else if (response.statusCode == 401) {
-        throw SyncClipboardException(
-          '认证失败：用户名或密码错误',
-          statusCode: 401,
-        );
+        throw SyncClipboardException('认证失败：用户名或密码错误', statusCode: 401);
       } else if (response.statusCode == 404) {
-        throw SyncClipboardException(
-          '文件不存在：$filename 未找到',
-          statusCode: 404,
-        );
+        throw SyncClipboardException('文件不存在：$filename 未找到', statusCode: 404);
       } else {
         throw SyncClipboardException(
           '下载失败：HTTP ${response.statusCode}',
@@ -273,7 +262,7 @@ class SyncClipboardClient {
   /// 处理 Dio 异常，转换为更友好的错误信息
   SyncClipboardException _handleDioException(DioException e) {
     String message;
-    
+
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
         message = '连接超时，请检查服务器地址';

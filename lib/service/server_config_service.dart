@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:sync_clipboard_flutter/model/server_config/server_config.dart';
 import 'package:sync_clipboard_flutter/model/server_config/server_config_list.dart';
+import 'package:sync_clipboard_flutter/service/wifi_info_service.dart';
 
 /// 服务器配置管理服务
 class ServerConfigService {
@@ -70,19 +71,34 @@ class ServerConfigService {
   /// 获取当前激活的配置
   static Future<ServerConfig?> getActiveConfig() async {
     final configList = await getConfigList();
-    if (configList.activeConfigId == null || configList.configs.isEmpty) {
+    if (configList.configs.isEmpty) {
       return null;
     }
 
-    // 查找激活的配置
+    final defaultConfig = _getDefaultConfig(configList);
+    if (defaultConfig == null) {
+      return null;
+    }
+
+    final currentWifiName = await WifiInfoService.getCurrentWifiName();
+    if (currentWifiName == null) {
+      return defaultConfig;
+    }
+
     for (final config in configList.configs) {
-      if (config.id == configList.activeConfigId) {
+      if (config.id == defaultConfig.id) {
+        continue;
+      }
+      if (config.matchesWifiName(currentWifiName)) {
         return config;
       }
     }
 
-    // 如果找不到激活的配置，返回第一个
-    return configList.configs.first;
+    if (defaultConfig.matchesWifiName(currentWifiName)) {
+      return defaultConfig;
+    }
+
+    return defaultConfig;
   }
 
   /// 保存配置列表
@@ -117,8 +133,9 @@ class ServerConfigService {
   /// 删除配置
   static Future<ServerConfigList> deleteConfig(String configId) async {
     final configList = await getConfigList();
-    final newConfigs =
-        configList.configs.where((c) => c.id != configId).toList();
+    final newConfigs = configList.configs
+        .where((c) => c.id != configId)
+        .toList();
 
     // 如果删除的是当前激活配置，切换到第一个
     String? newActiveId = configList.activeConfigId;
@@ -145,5 +162,22 @@ class ServerConfigService {
   /// 生成新的配置 ID
   static String generateId() {
     return _uuid.v4();
+  }
+
+  static ServerConfig? _getDefaultConfig(ServerConfigList configList) {
+    if (configList.configs.isEmpty) {
+      return null;
+    }
+
+    final activeConfigId = configList.activeConfigId;
+    if (activeConfigId != null) {
+      for (final config in configList.configs) {
+        if (config.id == activeConfigId) {
+          return config;
+        }
+      }
+    }
+
+    return configList.configs.first;
   }
 }

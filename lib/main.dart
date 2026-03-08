@@ -49,10 +49,7 @@ class MyApp extends StatelessWidget {
             Locale('zh', 'TW'), // 繁体中文
             Locale('en', 'US'), // 英文
           ],
-          theme: ThemeData(
-            colorScheme: lightColorScheme,
-            useMaterial3: true,
-          ),
+          theme: ThemeData(colorScheme: lightColorScheme, useMaterial3: true),
           darkTheme: ThemeData(
             colorScheme: darkColorScheme,
             useMaterial3: true,

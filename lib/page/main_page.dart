@@ -20,11 +20,7 @@ class _MainPageState extends State<MainPage> {
   bool _isAnimating = false; // 标志位：是否正在执行点击触发的动画
 
   // 定义导航项对应的页面
-  static const List<Widget> _pages = [
-    HomePage(),
-    ConfigPage(),
-    DebugPage(),
-  ];
+  static const List<Widget> _pages = [HomePage(), ConfigPage(), DebugPage()];
 
   @override
   void initState() {
@@ -54,11 +50,11 @@ class _MainPageState extends State<MainPage> {
     final result = await UpdateService.checkForUpdate();
     if (result != null && mounted) {
       // 检查是否忽略了该版本（非强制更新时才生效）
-      if (!result.isForced && 
+      if (!result.isForced &&
           settings?.ignoredVersion == result.updateInfo.version) {
         return; // 用户已忽略该版本
       }
-      
+
       showGeneralDialog(
         context: context,
         barrierDismissible: !result.isForced,
@@ -93,10 +89,7 @@ class _MainPageState extends State<MainPage> {
             position: slideAnimation,
             child: ScaleTransition(
               scale: scaleAnimation,
-              child: FadeTransition(
-                opacity: curvedAnimation,
-                child: child,
-              ),
+              child: FadeTransition(opacity: curvedAnimation, child: child),
             ),
           );
         },
@@ -112,24 +105,26 @@ class _MainPageState extends State<MainPage> {
 
   void _onItemTapped(int index) {
     if (_selectedIndex == index) return; // 点击当前页面，不做任何操作
-    
+
     // 立即更新选中状态，避免底部导航栏图标闪现
     setState(() {
       _selectedIndex = index;
       _isAnimating = true; // 标记开始动画
     });
-    
+
     // 所有页面切换都使用动画
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    ).then((_) {
-      // 动画完成后，清除标记
-      setState(() {
-        _isAnimating = false;
-      });
-    });
+    _pageController
+        .animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        )
+        .then((_) {
+          // 动画完成后，清除标记
+          setState(() {
+            _isAnimating = false;
+          });
+        });
   }
 
   void _onPageChanged(int index) {
@@ -209,19 +204,17 @@ class _CustomNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       height: 80,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainer,
-      ),
+      decoration: BoxDecoration(color: colorScheme.surfaceContainer),
       child: SafeArea(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: List.generate(destinations.length, (index) {
             final destination = destinations[index];
             final isSelected = index == selectedIndex;
-            
+
             return Expanded(
               child: _NavItem(
                 icon: destination.icon,
@@ -258,7 +251,7 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -296,8 +289,8 @@ class _NavItem extends StatelessWidget {
                     child: Icon(
                       isSelected ? selectedIcon : icon,
                       key: ValueKey(isSelected),
-                      color: isSelected 
-                          ? colorScheme.onSecondaryContainer 
+                      color: isSelected
+                          ? colorScheme.onSecondaryContainer
                           : colorScheme.onSurfaceVariant,
                       size: 24,
                     ),
@@ -312,8 +305,8 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected 
-                    ? colorScheme.onSurface 
+                color: isSelected
+                    ? colorScheme.onSurface
                     : colorScheme.onSurfaceVariant,
               ),
               child: Text(label),

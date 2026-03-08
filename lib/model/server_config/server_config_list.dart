@@ -16,6 +16,7 @@ abstract class ServerConfigList with _$ServerConfigList {
   const factory ServerConfigList({
     /// 所有服务器配置列表
     @Default([]) List<ServerConfig> configs,
+
     /// 当前激活配置的 ID
     String? activeConfigId,
   }) = _ServerConfigList;
