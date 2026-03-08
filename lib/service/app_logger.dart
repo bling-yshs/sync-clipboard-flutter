@@ -13,6 +13,7 @@ class AppLogger {
   final _AppLogOutput _appLogOutput = _AppLogOutput();
 
   late final Logger _logger = Logger(
+    filter: ProductionFilter(),
     printer: _AppLogPrinter(),
     output: MultiOutput([ConsoleOutput(), _appLogOutput]),
   );
