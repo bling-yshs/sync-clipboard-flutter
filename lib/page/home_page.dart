@@ -168,112 +168,131 @@ class _HomePageState extends ConsumerState<HomePage> {
         // 同步 controller
         _syncControllers(state);
 
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                '服务器配置',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              // 配置选择器行
-              Row(
-                children: [
-                  Expanded(child: _buildConfigDropdown(state)),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () {
-                      ref.read(serverConfigProvider.notifier).createNewConfig();
-                    },
-                    icon: const Icon(Icons.add),
-                    tooltip: '新建配置',
-                  ),
-                  if (state.editingConfigId != null)
-                    IconButton(
-                      onPressed: () => _openAdvancedSettings(state),
-                      icon: const Icon(Icons.tune),
-                      tooltip: '高级设置',
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+            final minHeight = (constraints.maxHeight - bottomInset - 48).clamp(
+              0.0,
+              double.infinity,
+            );
+
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomInset),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: minHeight),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      '服务器配置',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: '配置名称（可选）',
-                  hintText: '留空则显示服务器地址',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.label),
+                    const SizedBox(height: 24),
+                    // 配置选择器行
+                    Row(
+                      children: [
+                        Expanded(child: _buildConfigDropdown(state)),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () {
+                            ref
+                                .read(serverConfigProvider.notifier)
+                                .createNewConfig();
+                          },
+                          icon: const Icon(Icons.add),
+                          tooltip: '新建配置',
+                        ),
+                        if (state.editingConfigId != null)
+                          IconButton(
+                            onPressed: () => _openAdvancedSettings(state),
+                            icon: const Icon(Icons.tune),
+                            tooltip: '高级设置',
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: '配置名称（可选）',
+                        hintText: '留空则显示服务器地址',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.label),
+                      ),
+                      onChanged: (value) {
+                        ref
+                            .read(serverConfigProvider.notifier)
+                            .updateField(name: value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _urlController,
+                      decoration: const InputDecoration(
+                        labelText: '服务器地址',
+                        hintText: '请输入服务器地址',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.dns),
+                      ),
+                      keyboardType: TextInputType.url,
+                      onChanged: (value) {
+                        ref
+                            .read(serverConfigProvider.notifier)
+                            .updateField(url: value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _usernameController,
+                      decoration: const InputDecoration(
+                        labelText: '用户名',
+                        hintText: '请输入用户名',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.person),
+                      ),
+                      onChanged: (value) {
+                        ref
+                            .read(serverConfigProvider.notifier)
+                            .updateField(username: value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(
+                        labelText: '密码',
+                        hintText: '请输入密码',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.lock),
+                      ),
+                      obscureText: true,
+                      onChanged: (value) {
+                        ref
+                            .read(serverConfigProvider.notifier)
+                            .updateField(password: value);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton.icon(
+                      onPressed: () => _testConnection(state),
+                      icon: const Icon(Icons.link),
+                      label: const Text('尝试连接到服务器'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
-                onChanged: (value) {
-                  ref
-                      .read(serverConfigProvider.notifier)
-                      .updateField(name: value);
-                },
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _urlController,
-                decoration: const InputDecoration(
-                  labelText: '服务器地址',
-                  hintText: '请输入服务器地址',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.dns),
-                ),
-                keyboardType: TextInputType.url,
-                onChanged: (value) {
-                  ref
-                      .read(serverConfigProvider.notifier)
-                      .updateField(url: value);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: '用户名',
-                  hintText: '请输入用户名',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-                onChanged: (value) {
-                  ref
-                      .read(serverConfigProvider.notifier)
-                      .updateField(username: value);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: '密码',
-                  hintText: '请输入密码',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                obscureText: true,
-                onChanged: (value) {
-                  ref
-                      .read(serverConfigProvider.notifier)
-                      .updateField(password: value);
-                },
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: () => _testConnection(state),
-                icon: const Icon(Icons.link),
-                label: const Text('尝试连接到服务器'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
     );
