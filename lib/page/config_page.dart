@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
+import 'package:sync_clipboard_flutter/page/log_view_page.dart';
 
 class ConfigPage extends StatefulWidget {
   const ConfigPage({super.key});
@@ -12,7 +13,7 @@ class ConfigPage extends StatefulWidget {
 
 class _ConfigPageState extends State<ConfigPage> {
   static const String _settingsStorageKey = 'app_settings';
-  
+
   AppSettings _settings = const AppSettings();
   bool _isLoading = true;
   String _version = '';
@@ -25,11 +26,8 @@ class _ConfigPageState extends State<ConfigPage> {
 
   Future<void> _loadData() async {
     // 并行加载设置和版本信息
-    await Future.wait([
-      _loadSettings(),
-      _loadVersion(),
-    ]);
-    
+    await Future.wait([_loadSettings(), _loadVersion()]);
+
     setState(() {
       _isLoading = false;
     });
@@ -38,7 +36,7 @@ class _ConfigPageState extends State<ConfigPage> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     final savedJson = prefs.getString(_settingsStorageKey);
-    
+
     if (savedJson != null && savedJson.isNotEmpty) {
       try {
         final settings = appSettingsFromJson(savedJson);
@@ -72,6 +70,12 @@ class _ConfigPageState extends State<ConfigPage> {
     await _saveSettings(newSettings);
   }
 
+  void _openLogPage() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LogViewPage()));
+  }
+
   /// 构建分类标题
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -97,7 +101,7 @@ class _ConfigPageState extends State<ConfigPage> {
       children: [
         // ===== 常规 =====
         _buildSectionHeader('常规'),
-        
+
         // 信任不安全的 HTTPS 证书
         SwitchListTile(
           secondary: const Icon(Icons.gpp_maybe),
@@ -106,7 +110,7 @@ class _ConfigPageState extends State<ConfigPage> {
           value: _settings.trustInsecureCert,
           onChanged: _toggleTrustInsecureCert,
         ),
-        
+
         // 启动时自动检查更新
         SwitchListTile(
           secondary: const Icon(Icons.system_update),
@@ -115,10 +119,26 @@ class _ConfigPageState extends State<ConfigPage> {
           value: _settings.autoCheckUpdate,
           onChanged: _toggleAutoCheckUpdate,
         ),
-        
+
+        // ===== 调试 =====
+        _buildSectionHeader('调试'),
+
+        // 运行日志
+        ListTile(
+          leading: const Icon(Icons.receipt_long_outlined),
+          title: const Text('运行日志'),
+          subtitle: const Text('查看应用运行时日志'),
+          trailing: IconButton(
+            tooltip: '查看日志',
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _openLogPage,
+          ),
+          onTap: _openLogPage,
+        ),
+
         // ===== 其它 =====
         _buildSectionHeader('关于'),
-        
+
         // 软件版本
         ListTile(
           leading: const Icon(Icons.memory),

@@ -3,8 +3,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'router/app_router.dart';
+import 'package:sync_clipboard_flutter/service/app_logger.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AppLogger.instance.init();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -49,10 +52,7 @@ class MyApp extends StatelessWidget {
             Locale('zh', 'TW'), // 繁体中文
             Locale('en', 'US'), // 英文
           ],
-          theme: ThemeData(
-            colorScheme: lightColorScheme,
-            useMaterial3: true,
-          ),
+          theme: ThemeData(colorScheme: lightColorScheme, useMaterial3: true),
           darkTheme: ThemeData(
             colorScheme: darkColorScheme,
             useMaterial3: true,
