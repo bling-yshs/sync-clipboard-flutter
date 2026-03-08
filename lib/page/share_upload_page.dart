@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
+import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// MethodChannel 用于从 Android 获取分享数据
@@ -20,7 +21,7 @@ class ShareTextUploadPage extends StatefulWidget {
 }
 
 class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在上传分享的文本...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -70,14 +71,14 @@ class _ShareTextUploadPageState extends State<ShareTextUploadPage> {
       Fluttertoast.showToast(msg: '分享文本上传成功！🎉');
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
-      _log.e('上传失败 - 业务异常', error: e);
+      _log.e('上传失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
         _hasError = true;
       });
     } catch (e) {
-      _log.e('上传失败 - 未知错误', error: e);
+      _log.e('上传失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;
@@ -106,7 +107,7 @@ class ShareFileUploadPage extends StatefulWidget {
 }
 
 class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在上传分享的文件...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -194,7 +195,7 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
       Fluttertoast.showToast(msg: '文件上传成功！\n$filename');
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
-      _log.e('上传失败 - 业务异常', error: e);
+      _log.e('上传失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
@@ -202,7 +203,7 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         _showProgress = false;
       });
     } catch (e) {
-      _log.e('上传失败 - 未知错误', error: e);
+      _log.e('上传失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;

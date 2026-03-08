@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
+import 'package:sync_clipboard_flutter/page/log_view_page.dart';
 
 class ConfigPage extends StatefulWidget {
   const ConfigPage({super.key});
@@ -69,6 +70,12 @@ class _ConfigPageState extends State<ConfigPage> {
     await _saveSettings(newSettings);
   }
 
+  void _openLogPage() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const LogViewPage()));
+  }
+
   /// 构建分类标题
   Widget _buildSectionHeader(String title) {
     return Padding(
@@ -112,7 +119,21 @@ class _ConfigPageState extends State<ConfigPage> {
           value: _settings.autoCheckUpdate,
           onChanged: _toggleAutoCheckUpdate,
         ),
+        // ===== 调试 =====
+        _buildSectionHeader('调试'),
 
+        // 运行日志
+        ListTile(
+          leading: const Icon(Icons.receipt_long_outlined),
+          title: const Text('运行日志'),
+          subtitle: const Text('查看应用运行时日志'),
+          trailing: IconButton(
+            tooltip: '查看日志',
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _openLogPage,
+          ),
+          onTap: _openLogPage,
+        ),
         // ===== 其它 =====
         _buildSectionHeader('关于'),
 

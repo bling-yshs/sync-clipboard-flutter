@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
+import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
@@ -19,7 +20,7 @@ class TileUploadPage extends StatefulWidget {
 }
 
 class _TileUploadPageState extends State<TileUploadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在上传剪贴板...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -87,14 +88,14 @@ class _TileUploadPageState extends State<TileUploadPage> {
       Fluttertoast.showToast(msg: '剪贴版内容上传成功！🎉');
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
-      _log.e('上传剪贴板失败 - 业务异常', error: e);
+      _log.e('上传剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
         _hasError = true;
       });
     } catch (e) {
-      _log.e('上传剪贴板失败 - 未知错误', error: e);
+      _log.e('上传剪贴板失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;
@@ -123,7 +124,7 @@ class TileDownloadPage extends StatefulWidget {
 }
 
 class _TileDownloadPageState extends State<TileDownloadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在下载剪贴板...';
   bool _isDownloading = true;
   bool _hasError = false;
@@ -275,7 +276,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
             );
             SystemNavigator.pop();
           } catch (e) {
-            _log.e('解压失败', error: e);
+            _log.e('解压失败', error: e, stackTrace: StackTrace.current);
             setState(() {
               _message = '解压失败：$e';
               _isDownloading = false;
@@ -285,7 +286,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
           break;
       }
     } on SyncClipboardException catch (e) {
-      _log.e('下载剪贴板失败 - 业务异常', error: e);
+      _log.e('下载剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '下载失败：${e.message}';
         _isDownloading = false;
@@ -293,7 +294,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
         _showProgress = false;
       });
     } catch (e) {
-      _log.e('下载剪贴板失败 - 未知错误', error: e);
+      _log.e('下载剪贴板失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '下载失败：$e';
         _isDownloading = false;

@@ -12,6 +12,7 @@ import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
+import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
@@ -24,7 +25,7 @@ class DebugPage extends StatefulWidget {
 
 class _DebugPageState extends State<DebugPage> {
   // 创建 Logger 实例 - 用于记录日志
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
 
   // 手动上传相关状态
   bool _isUploading = false;
@@ -68,11 +69,11 @@ class _DebugPageState extends State<DebugPage> {
 
       Fluttertoast.showToast(msg: '剪贴版内容上传成功！🎉');
     } on SyncClipboardException catch (e) {
-      _log.e('上传剪贴板失败 - 业务异常', error: e);
+      _log.e('上传剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
 
       Fluttertoast.showToast(msg: '上传失败：${e.message}');
     } catch (e) {
-      _log.e('上传剪贴板失败 - 未知错误', error: e);
+      _log.e('上传剪贴板失败 - 未知错误', error: e, stackTrace: StackTrace.current);
 
       Fluttertoast.showToast(msg: '上传失败：$e');
     }
@@ -167,17 +168,17 @@ class _DebugPageState extends State<DebugPage> {
               toastLength: Toast.LENGTH_LONG,
             );
           } catch (e) {
-            _log.e('解压失败', error: e);
+            _log.e('解压失败', error: e, stackTrace: StackTrace.current);
             Fluttertoast.showToast(msg: '解压失败：$e');
           }
           break;
       }
     } on SyncClipboardException catch (e) {
-      _log.e('下载剪贴板失败 - 业务异常', error: e);
+      _log.e('下载剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
 
       Fluttertoast.showToast(msg: '下载失败：${e.message}');
     } catch (e) {
-      _log.e('下载剪贴板失败 - 未知错误', error: e);
+      _log.e('下载剪贴板失败 - 未知错误', error: e, stackTrace: StackTrace.current);
 
       Fluttertoast.showToast(msg: '下载失败：$e');
     }
@@ -213,7 +214,7 @@ class _DebugPageState extends State<DebugPage> {
       // 2. 调用文件选择器并上传
       await _pickAndUploadFile();
     } catch (e) {
-      _log.e('手动上传文件失败', error: e);
+      _log.e('手动上传文件失败', error: e, stackTrace: StackTrace.current);
       Fluttertoast.showToast(msg: '操作失败：$e');
     }
   }
@@ -336,13 +337,13 @@ class _DebugPageState extends State<DebugPage> {
 
       Fluttertoast.showToast(msg: '文件上传成功！\n$filename');
     } on SyncClipboardException catch (e) {
-      _log.e('上传失败 - 业务异常', error: e);
+      _log.e('上传失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _isUploading = false;
       });
       Fluttertoast.showToast(msg: '上传失败：${e.message}');
     } catch (e) {
-      _log.e('上传失败 - 未知错误', error: e);
+      _log.e('上传失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _isUploading = false;
       });
