@@ -12,6 +12,7 @@ abstract class ServerConfigState with _$ServerConfigState {
     @Default('') String url,
     @Default('') String username,
     @Default('') String password,
+    @Default([]) List<String> autoSwitchWifiNames,
     @Default(false) bool isSaving,
   }) = _ServerConfigState;
 }

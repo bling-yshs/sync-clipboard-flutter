@@ -67,9 +67,9 @@ class DownloadsSaveService {
     if (parts.isEmpty || parts.first != 'Download') {
       throw ArgumentError('path 必须以 /Download 开头');
     }
-    final hasInvalidSegment = parts.skip(1).any(
-      (segment) => segment == '.' || segment == '..',
-    );
+    final hasInvalidSegment = parts
+        .skip(1)
+        .any((segment) => segment == '.' || segment == '..');
     if (hasInvalidSegment) {
       throw ArgumentError('path 不能包含 . 或 ..');
     }
@@ -115,10 +115,6 @@ class DownloadsSaveService {
     required String rootFolderName,
   }) async {
     final safeRoot = _toDownloadPath(rootFolderName);
-    await saveBytesToDownloads(
-      bytes: zipBytes,
-      path: safeRoot,
-      isZip: true,
-    );
+    await saveBytesToDownloads(bytes: zipBytes, path: safeRoot, isZip: true);
   }
 }

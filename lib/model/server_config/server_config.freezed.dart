@@ -17,7 +17,8 @@ mixin _$ServerConfig {
 
 /// 唯一标识符
  String get id;/// 用户自定义名称，可为空
- String? get name; String get url; String get username; String get password;
+ String? get name; String get url; String get username; String get password;/// 当前 WiFi 名称命中时，自动切换到此配置
+ List<String> get autoSwitchWifiNames;
 /// Create a copy of ServerConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +31,16 @@ $ServerConfigCopyWith<ServerConfig> get copyWith => _$ServerConfigCopyWithImpl<S
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerConfig&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.url, url) || other.url == url)&&(identical(other.username, username) || other.username == username)&&(identical(other.password, password) || other.password == password));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ServerConfig&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.url, url) || other.url == url)&&(identical(other.username, username) || other.username == username)&&(identical(other.password, password) || other.password == password)&&const DeepCollectionEquality().equals(other.autoSwitchWifiNames, autoSwitchWifiNames));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,url,username,password);
+int get hashCode => Object.hash(runtimeType,id,name,url,username,password,const DeepCollectionEquality().hash(autoSwitchWifiNames));
 
 @override
 String toString() {
-  return 'ServerConfig(id: $id, name: $name, url: $url, username: $username, password: $password)';
+  return 'ServerConfig(id: $id, name: $name, url: $url, username: $username, password: $password, autoSwitchWifiNames: $autoSwitchWifiNames)';
 }
 
 
@@ -50,7 +51,7 @@ abstract mixin class $ServerConfigCopyWith<$Res>  {
   factory $ServerConfigCopyWith(ServerConfig value, $Res Function(ServerConfig) _then) = _$ServerConfigCopyWithImpl;
 @useResult
 $Res call({
- String id, String? name, String url, String username, String password
+ String id, String? name, String url, String username, String password, List<String> autoSwitchWifiNames
 });
 
 
@@ -67,14 +68,15 @@ class _$ServerConfigCopyWithImpl<$Res>
 
 /// Create a copy of ServerConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? url = null,Object? username = null,Object? password = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? url = null,Object? username = null,Object? password = null,Object? autoSwitchWifiNames = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,password: null == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
-as String,
+as String,autoSwitchWifiNames: null == autoSwitchWifiNames ? _self.autoSwitchWifiNames : autoSwitchWifiNames // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -159,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name,  String url,  String username,  String password)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name,  String url,  String username,  String password,  List<String> autoSwitchWifiNames)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ServerConfig() when $default != null:
-return $default(_that.id,_that.name,_that.url,_that.username,_that.password);case _:
+return $default(_that.id,_that.name,_that.url,_that.username,_that.password,_that.autoSwitchWifiNames);case _:
   return orElse();
 
 }
@@ -180,10 +182,10 @@ return $default(_that.id,_that.name,_that.url,_that.username,_that.password);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name,  String url,  String username,  String password)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name,  String url,  String username,  String password,  List<String> autoSwitchWifiNames)  $default,) {final _that = this;
 switch (_that) {
 case _ServerConfig():
-return $default(_that.id,_that.name,_that.url,_that.username,_that.password);case _:
+return $default(_that.id,_that.name,_that.url,_that.username,_that.password,_that.autoSwitchWifiNames);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +202,10 @@ return $default(_that.id,_that.name,_that.url,_that.username,_that.password);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name,  String url,  String username,  String password)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name,  String url,  String username,  String password,  List<String> autoSwitchWifiNames)?  $default,) {final _that = this;
 switch (_that) {
 case _ServerConfig() when $default != null:
-return $default(_that.id,_that.name,_that.url,_that.username,_that.password);case _:
+return $default(_that.id,_that.name,_that.url,_that.username,_that.password,_that.autoSwitchWifiNames);case _:
   return null;
 
 }
@@ -215,7 +217,7 @@ return $default(_that.id,_that.name,_that.url,_that.username,_that.password);cas
 @JsonSerializable()
 
 class _ServerConfig extends ServerConfig {
-  const _ServerConfig({required this.id, this.name, required this.url, required this.username, required this.password}): super._();
+  const _ServerConfig({required this.id, this.name, required this.url, required this.username, required this.password, final  List<String> autoSwitchWifiNames = const []}): _autoSwitchWifiNames = autoSwitchWifiNames,super._();
   factory _ServerConfig.fromJson(Map<String, dynamic> json) => _$ServerConfigFromJson(json);
 
 /// 唯一标识符
@@ -225,6 +227,15 @@ class _ServerConfig extends ServerConfig {
 @override final  String url;
 @override final  String username;
 @override final  String password;
+/// 当前 WiFi 名称命中时，自动切换到此配置
+ final  List<String> _autoSwitchWifiNames;
+/// 当前 WiFi 名称命中时，自动切换到此配置
+@override@JsonKey() List<String> get autoSwitchWifiNames {
+  if (_autoSwitchWifiNames is EqualUnmodifiableListView) return _autoSwitchWifiNames;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_autoSwitchWifiNames);
+}
+
 
 /// Create a copy of ServerConfig
 /// with the given fields replaced by the non-null parameter values.
@@ -239,16 +250,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ServerConfig&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.url, url) || other.url == url)&&(identical(other.username, username) || other.username == username)&&(identical(other.password, password) || other.password == password));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ServerConfig&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.url, url) || other.url == url)&&(identical(other.username, username) || other.username == username)&&(identical(other.password, password) || other.password == password)&&const DeepCollectionEquality().equals(other._autoSwitchWifiNames, _autoSwitchWifiNames));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,url,username,password);
+int get hashCode => Object.hash(runtimeType,id,name,url,username,password,const DeepCollectionEquality().hash(_autoSwitchWifiNames));
 
 @override
 String toString() {
-  return 'ServerConfig(id: $id, name: $name, url: $url, username: $username, password: $password)';
+  return 'ServerConfig(id: $id, name: $name, url: $url, username: $username, password: $password, autoSwitchWifiNames: $autoSwitchWifiNames)';
 }
 
 
@@ -259,7 +270,7 @@ abstract mixin class _$ServerConfigCopyWith<$Res> implements $ServerConfigCopyWi
   factory _$ServerConfigCopyWith(_ServerConfig value, $Res Function(_ServerConfig) _then) = __$ServerConfigCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? name, String url, String username, String password
+ String id, String? name, String url, String username, String password, List<String> autoSwitchWifiNames
 });
 
 
@@ -276,14 +287,15 @@ class __$ServerConfigCopyWithImpl<$Res>
 
 /// Create a copy of ServerConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? url = null,Object? username = null,Object? password = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? url = null,Object? username = null,Object? password = null,Object? autoSwitchWifiNames = null,}) {
   return _then(_ServerConfig(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String?,url: null == url ? _self.url : url // ignore: cast_nullable_to_non_nullable
 as String,username: null == username ? _self.username : username // ignore: cast_nullable_to_non_nullable
 as String,password: null == password ? _self.password : password // ignore: cast_nullable_to_non_nullable
-as String,
+as String,autoSwitchWifiNames: null == autoSwitchWifiNames ? _self._autoSwitchWifiNames : autoSwitchWifiNames // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 

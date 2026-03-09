@@ -119,7 +119,6 @@ class _ConfigPageState extends State<ConfigPage> {
           value: _settings.autoCheckUpdate,
           onChanged: _toggleAutoCheckUpdate,
         ),
-
         // ===== 调试 =====
         _buildSectionHeader('调试'),
 
@@ -135,7 +134,6 @@ class _ConfigPageState extends State<ConfigPage> {
           ),
           onTap: _openLogPage,
         ),
-
         // ===== 其它 =====
         _buildSectionHeader('关于'),
 

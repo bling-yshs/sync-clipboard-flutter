@@ -12,7 +12,7 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
     final configList = await ServerConfigService.getConfigList();
 
     // 如果有激活配置，填充表单字段
-    if (configList.activeConfigId != null && configList.configs.isNotEmpty) {
+    if (configList.configs.isNotEmpty) {
       final activeConfig = configList.configs.firstWhere(
         (c) => c.id == configList.activeConfigId,
         orElse: () => configList.configs.first,
@@ -24,6 +24,7 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
         url: activeConfig.url,
         username: activeConfig.username,
         password: activeConfig.password,
+        autoSwitchWifiNames: activeConfig.normalizedAutoSwitchWifiNames,
       );
     }
 
@@ -38,14 +39,17 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
     final newList = await ServerConfigService.setActiveConfig(configId);
     final config = newList.configs.firstWhere((c) => c.id == configId);
 
-    state = AsyncData(currentState.copyWith(
-      configList: newList,
-      editingConfigId: configId,
-      name: config.name ?? '',
-      url: config.url,
-      username: config.username,
-      password: config.password,
-    ));
+    state = AsyncData(
+      currentState.copyWith(
+        configList: newList,
+        editingConfigId: configId,
+        name: config.name ?? '',
+        url: config.url,
+        username: config.username,
+        password: config.password,
+        autoSwitchWifiNames: config.normalizedAutoSwitchWifiNames,
+      ),
+    );
   }
 
   /// 新建配置
@@ -53,13 +57,16 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
     final currentState = state.value;
     if (currentState == null) return;
 
-    state = AsyncData(currentState.copyWith(
-      editingConfigId: null,
-      name: '',
-      url: '',
-      username: '',
-      password: '',
-    ));
+    state = AsyncData(
+      currentState.copyWith(
+        editingConfigId: null,
+        name: '',
+        url: '',
+        username: '',
+        password: '',
+        autoSwitchWifiNames: const [],
+      ),
+    );
   }
 
   /// 更新表单字段并自动保存
@@ -68,6 +75,7 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
     String? url,
     String? username,
     String? password,
+    List<String>? autoSwitchWifiNames,
   }) async {
     final currentState = state.value;
     if (currentState == null) return;
@@ -78,6 +86,8 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
       url: url ?? currentState.url,
       username: username ?? currentState.username,
       password: password ?? currentState.password,
+      autoSwitchWifiNames:
+          autoSwitchWifiNames ?? currentState.autoSwitchWifiNames,
     );
     state = AsyncData(newState);
 
@@ -100,6 +110,11 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
 
     try {
       final name = currentState.name.isEmpty ? null : currentState.name;
+      final autoSwitchWifiNames = currentState.autoSwitchWifiNames
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toSet()
+          .toList();
 
       if (currentState.editingConfigId != null) {
         // 编辑模式：更新现有配置
@@ -109,12 +124,16 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
           url: currentState.url,
           username: currentState.username,
           password: currentState.password,
+          autoSwitchWifiNames: autoSwitchWifiNames,
         );
         final newList = await ServerConfigService.updateConfig(config);
-        state = AsyncData(currentState.copyWith(
-          configList: newList,
-          isSaving: false,
-        ));
+        state = AsyncData(
+          currentState.copyWith(
+            configList: newList,
+            autoSwitchWifiNames: autoSwitchWifiNames,
+            isSaving: false,
+          ),
+        );
       } else {
         // 新建模式：创建新配置
         final newId = ServerConfigService.generateId();
@@ -124,13 +143,17 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
           url: currentState.url,
           username: currentState.username,
           password: currentState.password,
+          autoSwitchWifiNames: autoSwitchWifiNames,
         );
         final newList = await ServerConfigService.addConfig(config);
-        state = AsyncData(currentState.copyWith(
-          configList: newList,
-          editingConfigId: newId,
-          isSaving: false,
-        ));
+        state = AsyncData(
+          currentState.copyWith(
+            configList: newList,
+            editingConfigId: newId,
+            autoSwitchWifiNames: autoSwitchWifiNames,
+            isSaving: false,
+          ),
+        );
       }
     } catch (e) {
       state = AsyncData(currentState.copyWith(isSaving: false));
@@ -152,24 +175,30 @@ class ServerConfigNotifier extends _$ServerConfigNotifier {
           (c) => c.id == newList.activeConfigId,
           orElse: () => newList.configs.first,
         );
-        state = AsyncData(currentState.copyWith(
-          configList: newList,
-          editingConfigId: activeConfig.id,
-          name: activeConfig.name ?? '',
-          url: activeConfig.url,
-          username: activeConfig.username,
-          password: activeConfig.password,
-        ));
+        state = AsyncData(
+          currentState.copyWith(
+            configList: newList,
+            editingConfigId: activeConfig.id,
+            name: activeConfig.name ?? '',
+            url: activeConfig.url,
+            username: activeConfig.username,
+            password: activeConfig.password,
+            autoSwitchWifiNames: activeConfig.normalizedAutoSwitchWifiNames,
+          ),
+        );
       } else {
         // 没有配置了，清空表单
-        state = AsyncData(currentState.copyWith(
-          configList: newList,
-          editingConfigId: null,
-          name: '',
-          url: '',
-          username: '',
-          password: '',
-        ));
+        state = AsyncData(
+          currentState.copyWith(
+            configList: newList,
+            editingConfigId: null,
+            name: '',
+            url: '',
+            username: '',
+            password: '',
+            autoSwitchWifiNames: const [],
+          ),
+        );
       }
     } else {
       state = AsyncData(currentState.copyWith(configList: newList));

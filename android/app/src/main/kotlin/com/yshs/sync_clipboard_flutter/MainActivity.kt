@@ -7,5 +7,6 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         DownloadsSaveChannel.register(flutterEngine, this)
+        WifiInfoChannel.register(flutterEngine, this)
     }
 }

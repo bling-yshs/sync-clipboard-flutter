@@ -15,6 +15,7 @@ import 'package:sync_clipboard_flutter/model/update_info/update_info.dart';
 class UpdateCheckResult {
   final UpdateInfo updateInfo;
   final bool isForced;
+
   /// 已缓存的 APK 路径（如果 SHA256 校验通过）
   final String? cachedApkPath;
 
@@ -102,10 +103,12 @@ class UpdateService {
 
   /// 竞速获取更新信息（先成功的胜出，失败的忽略）
   static Future<UpdateInfo?> _fetchUpdateInfo() async {
-    final dio = Dio(BaseOptions(
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ));
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
 
     // 使用 Completer 实现"先成功的胜出"逻辑
     final completer = Completer<UpdateInfo?>();
@@ -113,29 +116,34 @@ class UpdateService {
     final totalCount = _updateUrls.length;
 
     for (final url in _updateUrls) {
-      dio.get(url).then((response) {
-        // 如果已经有结果了，忽略后续响应
-        if (completer.isCompleted) return;
+      dio
+          .get(url)
+          .then((response) {
+            // 如果已经有结果了，忽略后续响应
+            if (completer.isCompleted) return;
 
-        if (response.statusCode == 200) {
-          UpdateInfo? info;
-          if (response.data is Map<String, dynamic>) {
-            info = UpdateInfo.fromJson(response.data as Map<String, dynamic>);
-          } else if (response.data is String) {
-            info = updateInfoFromJson(response.data as String);
-          }
-          if (info != null && !completer.isCompleted) {
-            completer.complete(info);
-          }
-        }
-      }).catchError((e) {
-        // 请求失败，增加失败计数
-        failedCount++;
-        // 如果所有请求都失败了，返回 null
-        if (failedCount >= totalCount && !completer.isCompleted) {
-          completer.complete(null);
-        }
-      });
+            if (response.statusCode == 200) {
+              UpdateInfo? info;
+              if (response.data is Map<String, dynamic>) {
+                info = UpdateInfo.fromJson(
+                  response.data as Map<String, dynamic>,
+                );
+              } else if (response.data is String) {
+                info = updateInfoFromJson(response.data as String);
+              }
+              if (info != null && !completer.isCompleted) {
+                completer.complete(info);
+              }
+            }
+          })
+          .catchError((e) {
+            // 请求失败，增加失败计数
+            failedCount++;
+            // 如果所有请求都失败了，返回 null
+            if (failedCount >= totalCount && !completer.isCompleted) {
+              completer.complete(null);
+            }
+          });
     }
 
     return completer.future;
@@ -149,10 +157,12 @@ class UpdateService {
     String url, {
     void Function(int received, int total)? onProgress,
   }) async {
-    final dio = Dio(BaseOptions(
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(minutes: 10),
-    ));
+    final dio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(minutes: 10),
+      ),
+    );
 
     final savePath = await getApkPath();
 
@@ -163,11 +173,7 @@ class UpdateService {
     }
 
     // 下载文件
-    await dio.download(
-      url,
-      savePath,
-      onReceiveProgress: onProgress,
-    );
+    await dio.download(url, savePath, onReceiveProgress: onProgress);
 
     return savePath;
   }
@@ -178,4 +184,3 @@ class UpdateService {
     await AndroidPackageInstaller.installApk(apkFilePath: filePath);
   }
 }
-

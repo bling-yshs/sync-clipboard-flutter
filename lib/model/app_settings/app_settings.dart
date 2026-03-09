@@ -7,7 +7,8 @@ import 'dart:convert';
 part 'app_settings.freezed.dart';
 part 'app_settings.g.dart';
 
-AppSettings appSettingsFromJson(String str) => AppSettings.fromJson(json.decode(str));
+AppSettings appSettingsFromJson(String str) =>
+    AppSettings.fromJson(json.decode(str));
 
 String appSettingsToJson(AppSettings data) => json.encode(data.toJson());
 
@@ -18,16 +19,20 @@ abstract class AppSettings with _$AppSettings {
     /// 开启后，Dio 请求将不校验 HTTPS 证书
     /// 注意：这会降低安全性，仅建议在开发/测试环境使用
     @Default(false) bool trustInsecureCert,
+
     /// 启动时自动检查更新
     @Default(true) bool autoCheckUpdate,
+
     /// 是否已经显示过手动上传提示对话框
     /// 用户点击"我知道了"后设为 true，后续不再显示
     @Default(false) bool manualUploadDialogShown,
+
     /// 被忽略的更新版本号
     /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
     /// 当有新版本发布时，会自动清除该设置
     String? ignoredVersion,
   }) = _AppSettings;
 
-  factory AppSettings.fromJson(Map<String, dynamic> json) => _$AppSettingsFromJson(json);
+  factory AppSettings.fromJson(Map<String, dynamic> json) =>
+      _$AppSettingsFromJson(json);
 }

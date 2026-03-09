@@ -13,6 +13,11 @@ _ServerConfig _$ServerConfigFromJson(Map<String, dynamic> json) =>
       url: json['url'] as String,
       username: json['username'] as String,
       password: json['password'] as String,
+      autoSwitchWifiNames:
+          (json['autoSwitchWifiNames'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$ServerConfigToJson(_ServerConfig instance) =>
@@ -22,4 +27,5 @@ Map<String, dynamic> _$ServerConfigToJson(_ServerConfig instance) =>
       'url': instance.url,
       'username': instance.username,
       'password': instance.password,
+      'autoSwitchWifiNames': instance.autoSwitchWifiNames,
     };
