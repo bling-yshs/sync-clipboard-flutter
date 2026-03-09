@@ -27,6 +27,10 @@ abstract class AppSettings with _$AppSettings {
     /// 用户点击"我知道了"后设为 true，后续不再显示
     @Default(false) bool manualUploadDialogShown,
 
+    /// Download 下的相对保存目录
+    /// 例如 A/B/C，最终保存到 /Download/A/B/C
+    @Default('') String downloadRelativePath,
+
     /// 被忽略的更新版本号
     /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
     /// 当有新版本发布时，会自动清除该设置

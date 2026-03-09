@@ -258,13 +258,12 @@ class _LogViewPageState extends State<LogViewPage> {
       final result = await DownloadsSaveService.saveBytesToDownloads(
         bytes: utf8.encode(visibleLogs.map((e) => e.raw).join('\n')),
         fileName: fileName,
-        path: '/Download',
       );
       if (!mounted) {
         return;
       }
       final displayName = result.displayName ?? fileName;
-      _showToast('已导出到 Download/$displayName');
+      _showToast('已导出到 ${result.path}/$displayName');
     } catch (e) {
       if (!mounted) {
         return;
