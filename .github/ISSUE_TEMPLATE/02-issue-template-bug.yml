@@ -1,0 +1,35 @@
+name: 🐛 错误报告 | Bug Report
+description: 请详细描述您使用过程中遇到的问题。 | Please describe in detail the problems you encountered in the process of using.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请在您提交 bug 之前，回答以下这些问题。
+        Please answer these questions before you submit a bug.
+
+  - type: input
+    id: version
+    attributes:
+      label: 您使用的版本？ | Your usage version?
+      placeholder: 例如 1.0.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 简单描述一下这个问题 | Briefly describe the problem
+      placeholder: 请简单描述你遇到的问题
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 | Steps to reproduce
+      placeholder: 请按步骤描述如何复现这个问题
+    validations:
+      required: true

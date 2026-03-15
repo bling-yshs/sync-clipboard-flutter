@@ -1,0 +1,27 @@
+name: 🚀 功能请求 | Feature Request
+description: 请详细描述您期望的功能。 | Please describe in detail the features you expect.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请在您提交期望的功能之前，回答以下这些问题。
+        Please answer these questions before you submit the desired feature.
+
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 您使用的场景？ | Your usage scenarios?
+      placeholder: 请描述这个功能会用在什么场景
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 您觉得应该如何实现这个功能？ | How do you think this feature should be implemented?
+      placeholder: 请描述你认为这个功能应该如何实现
+    validations:
+      required: true

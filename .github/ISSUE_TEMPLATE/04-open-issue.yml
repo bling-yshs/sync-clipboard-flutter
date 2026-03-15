@@ -1,0 +1,17 @@
+name: 💬 自由反馈 | Open Issue
+description: 适用于不属于 bug、功能请求或问题交流的其他内容 | Use this for anything that does not fit bug, feature, or question templates
+title: "[Issue] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请自由描述你的问题、建议或反馈。
+        Please describe your issue, idea, or feedback freely.
+
+  - type: textarea
+    id: details
+    attributes:
+      label: 内容 | Details
+      placeholder: 请在这里输入内容
+    validations:
+      required: true
