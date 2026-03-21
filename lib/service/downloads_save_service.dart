@@ -1,4 +1,6 @@
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 
 class DownloadsSaveResult {
   final bool isZip;
@@ -35,6 +37,7 @@ class DownloadsSaveResult {
 class DownloadsSaveService {
   DownloadsSaveService._();
 
+  static const String _settingsStorageKey = 'app_settings';
   static const MethodChannel _channel = MethodChannel(
     'com.yshs.sync_clipboard_flutter/downloads',
   );
@@ -50,10 +53,8 @@ class DownloadsSaveService {
     return normalized;
   }
 
-  static String _normalizePath(String? path) {
-    final raw = (path == null || path.trim().isEmpty)
-        ? '/Download'
-        : path.trim().replaceAll('\\', '/');
+  static String _normalizePath(String path) {
+    final raw = path.trim().replaceAll('\\', '/');
 
     final validPrefix = raw == '/Download' || raw.startsWith('/Download/');
     if (!validPrefix) {
@@ -76,15 +77,40 @@ class DownloadsSaveService {
     return '/${parts.join('/')}';
   }
 
-  static String _toDownloadPath(String pathOrName) {
-    final raw = pathOrName.trim();
+  static String normalizeRelativePath(String? relativePath) {
+    final raw = (relativePath ?? '').trim().replaceAll('\\', '/');
     if (raw.isEmpty) {
+      return '';
+    }
+
+    final parts = raw
+        .split('/')
+        .where((segment) => segment.isNotEmpty)
+        .toList();
+    final hasInvalidSegment = parts.any(
+      (segment) => segment == '.' || segment == '..',
+    );
+    if (hasInvalidSegment) {
+      throw ArgumentError('目录不能包含 . 或 ..');
+    }
+    return parts.join('/');
+  }
+
+  static String buildDownloadPathFromRelativePath(String? relativePath) {
+    final normalizedRelativePath = normalizeRelativePath(relativePath);
+    if (normalizedRelativePath.isEmpty) {
       return '/Download';
     }
-    if (raw == '/Download' || raw.startsWith('/Download/')) {
-      return _normalizePath(raw);
-    }
-    return _normalizePath('/Download/$raw');
+    return _normalizePath('/Download/$normalizedRelativePath');
+  }
+
+  static Future<String> getConfiguredDownloadPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    final settingsJson = prefs.getString(_settingsStorageKey);
+    final settings = settingsJson != null && settingsJson.isNotEmpty
+        ? appSettingsFromJson(settingsJson)
+        : const AppSettings();
+    return buildDownloadPathFromRelativePath(settings.downloadRelativePath);
   }
 
   static Future<DownloadsSaveResult> saveBytesToDownloads({
@@ -93,7 +119,9 @@ class DownloadsSaveService {
     String? path,
     bool isZip = false,
   }) async {
-    final safePath = _normalizePath(path);
+    final safePath = path == null
+        ? await getConfiguredDownloadPath()
+        : _normalizePath(path);
     final safeName = isZip ? '' : _normalizeFileName(fileName ?? '');
     final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
       'saveBytesToDownloads',
@@ -110,11 +138,15 @@ class DownloadsSaveService {
     return DownloadsSaveResult.fromMap(result);
   }
 
-  static Future<void> extractZipToDownloads({
+  static Future<DownloadsSaveResult> extractZipToDownloads({
     required List<int> zipBytes,
     required String rootFolderName,
   }) async {
-    final safeRoot = _toDownloadPath(rootFolderName);
-    await saveBytesToDownloads(bytes: zipBytes, path: safeRoot, isZip: true);
+    final basePath = await getConfiguredDownloadPath();
+    final normalizedRootName = normalizeRelativePath(rootFolderName);
+    final safeRoot = normalizedRootName.isEmpty
+        ? basePath
+        : _normalizePath('$basePath/$normalizedRootName');
+    return saveBytesToDownloads(bytes: zipBytes, path: safeRoot, isZip: true);
   }
 }

@@ -174,7 +174,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 
         case clipboard_model.ClipboardType.image:
         case clipboard_model.ClipboardType.file:
-          // 图片和文件类型：从服务器下载文件并保存到 Download 文件夹
+          // 图片和文件类型：从服务器下载文件并保存到指定下载目录
           final filename = clipboard.dataName ?? '';
 
           if (filename.isEmpty) {
@@ -211,10 +211,10 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
             fileName: filename,
           );
           final savedName = saved.displayName ?? filename;
-          _log.i('文件已下载到 Download 文件夹: $savedName, uri: ${saved.uri}');
+          _log.i('文件已下载到 ${saved.path}: $savedName, uri: ${saved.uri}');
 
           // 显示成功提示并立即退出
-          Fluttertoast.showToast(msg: '文件已下载到 Download 文件夹\n$savedName');
+          Fluttertoast.showToast(msg: '文件已下载到 ${saved.path}\n$savedName');
           SystemNavigator.pop();
           break;
 
@@ -263,15 +263,15 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 
           // 解压 zip 文件
           try {
-            await DownloadsSaveService.extractZipToDownloads(
+            final saved = await DownloadsSaveService.extractZipToDownloads(
               zipBytes: fileBytes,
               rootFolderName: folderName,
             );
-            _log.i('解压完成，文件已保存到 Download/$folderName');
+            _log.i('解压完成，文件已保存到 ${saved.path}');
 
             // 显示成功提示并立即退出
             Fluttertoast.showToast(
-              msg: '已解压到 Download 文件夹！\n$folderName',
+              msg: '已解压到 ${saved.path}',
               toastLength: Toast.LENGTH_LONG,
             );
             SystemNavigator.pop();
