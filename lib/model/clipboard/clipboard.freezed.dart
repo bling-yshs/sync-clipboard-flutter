@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Clipboard {
 
-@JsonKey(name: 'type') ClipboardType get type;@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? get hash;@JsonKey(name: 'text') String get text;@JsonKey(name: 'hasData') bool get hasData;@JsonKey(name: 'dataName', includeIfNull: false) String? get dataName;@JsonKey(name: 'size', includeIfNull: false) int? get size;
+ ClipboardType get type;@JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? get hash; String get text; bool get hasData;@JsonKey(includeIfNull: false) String? get dataName;@JsonKey(includeIfNull: false) int? get size;
 /// Create a copy of Clipboard
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ClipboardCopyWith<$Res>  {
   factory $ClipboardCopyWith(Clipboard value, $Res Function(Clipboard) _then) = _$ClipboardCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'type') ClipboardType type,@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? hash,@JsonKey(name: 'text') String text,@JsonKey(name: 'hasData') bool hasData,@JsonKey(name: 'dataName', includeIfNull: false) String? dataName,@JsonKey(name: 'size', includeIfNull: false) int? size
+ ClipboardType type,@JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? hash, String text, bool hasData,@JsonKey(includeIfNull: false) String? dataName,@JsonKey(includeIfNull: false) int? size
 });
 
 
@@ -158,7 +158,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'type')  ClipboardType type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash, @JsonKey(name: 'text')  String text, @JsonKey(name: 'hasData')  bool hasData, @JsonKey(name: 'dataName', includeIfNull: false)  String? dataName, @JsonKey(name: 'size', includeIfNull: false)  int? size)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ClipboardType type, @JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash,  String text,  bool hasData, @JsonKey(includeIfNull: false)  String? dataName, @JsonKey(includeIfNull: false)  int? size)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Clipboard() when $default != null:
 return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_that.size);case _:
@@ -179,7 +179,7 @@ return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'type')  ClipboardType type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash, @JsonKey(name: 'text')  String text, @JsonKey(name: 'hasData')  bool hasData, @JsonKey(name: 'dataName', includeIfNull: false)  String? dataName, @JsonKey(name: 'size', includeIfNull: false)  int? size)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ClipboardType type, @JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash,  String text,  bool hasData, @JsonKey(includeIfNull: false)  String? dataName, @JsonKey(includeIfNull: false)  int? size)  $default,) {final _that = this;
 switch (_that) {
 case _Clipboard():
 return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_that.size);case _:
@@ -199,7 +199,7 @@ return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'type')  ClipboardType type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash, @JsonKey(name: 'text')  String text, @JsonKey(name: 'hasData')  bool hasData, @JsonKey(name: 'dataName', includeIfNull: false)  String? dataName, @JsonKey(name: 'size', includeIfNull: false)  int? size)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ClipboardType type, @JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)  String? hash,  String text,  bool hasData, @JsonKey(includeIfNull: false)  String? dataName, @JsonKey(includeIfNull: false)  int? size)?  $default,) {final _that = this;
 switch (_that) {
 case _Clipboard() when $default != null:
 return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_that.size);case _:
@@ -214,15 +214,15 @@ return $default(_that.type,_that.hash,_that.text,_that.hasData,_that.dataName,_t
 @JsonSerializable()
 
 class _Clipboard implements Clipboard {
-  const _Clipboard({@JsonKey(name: 'type') required this.type, @JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) this.hash, @JsonKey(name: 'text') required this.text, @JsonKey(name: 'hasData') required this.hasData, @JsonKey(name: 'dataName', includeIfNull: false) this.dataName, @JsonKey(name: 'size', includeIfNull: false) this.size});
+  const _Clipboard({required this.type, @JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) this.hash, required this.text, required this.hasData, @JsonKey(includeIfNull: false) this.dataName, @JsonKey(includeIfNull: false) this.size});
   factory _Clipboard.fromJson(Map<String, dynamic> json) => _$ClipboardFromJson(json);
 
-@override@JsonKey(name: 'type') final  ClipboardType type;
-@override@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) final  String? hash;
-@override@JsonKey(name: 'text') final  String text;
-@override@JsonKey(name: 'hasData') final  bool hasData;
-@override@JsonKey(name: 'dataName', includeIfNull: false) final  String? dataName;
-@override@JsonKey(name: 'size', includeIfNull: false) final  int? size;
+@override final  ClipboardType type;
+@override@JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) final  String? hash;
+@override final  String text;
+@override final  bool hasData;
+@override@JsonKey(includeIfNull: false) final  String? dataName;
+@override@JsonKey(includeIfNull: false) final  int? size;
 
 /// Create a copy of Clipboard
 /// with the given fields replaced by the non-null parameter values.
@@ -257,7 +257,7 @@ abstract mixin class _$ClipboardCopyWith<$Res> implements $ClipboardCopyWith<$Re
   factory _$ClipboardCopyWith(_Clipboard value, $Res Function(_Clipboard) _then) = __$ClipboardCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'type') ClipboardType type,@JsonKey(name: 'hash', fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? hash,@JsonKey(name: 'text') String text,@JsonKey(name: 'hasData') bool hasData,@JsonKey(name: 'dataName', includeIfNull: false) String? dataName,@JsonKey(name: 'size', includeIfNull: false) int? size
+ ClipboardType type,@JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false) String? hash, String text, bool hasData,@JsonKey(includeIfNull: false) String? dataName,@JsonKey(includeIfNull: false) int? size
 });
 
 

@@ -3,6 +3,25 @@
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
 
+### ⚠ 重要提醒
+- 0.3.0 以后版本，仅能与 SyncClipboard v3.1.1 及以上版本搭配使用
+
+### Added
+
+- 设置页新增日志查看页面
+- 支持自定义下载目录
+- 支持根据当前 Wi-Fi 名称自动切换服务器配置
+
+### Fixed
+
+- 修复输入密码时输入框被键盘遮挡
+
+### Changed
+
+- 调整首页服务器配置选项卡样式
+
+## [0.3.0] - 2026-02-07
+
 ### Changed
 
 - ⚠ 破坏性更新
@@ -63,7 +82,8 @@
 
 - 第一次正式发布 sync-clipboard-tauri
 
-[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.0
 [0.2.3]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.3
 [0.2.2]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.2
 [0.2.1]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.1

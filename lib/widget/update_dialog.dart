@@ -12,10 +12,13 @@ import 'package:sync_clipboard_flutter/service/update_service.dart';
 enum UpdateDialogState {
   /// 选择下载源
   selectSource,
+
   /// 下载中
   downloading,
+
   /// 下载完成，正在安装
   installing,
+
   /// 下载失败
   failed,
 }
@@ -23,6 +26,7 @@ enum UpdateDialogState {
 class UpdateDialog extends StatefulWidget {
   final UpdateInfo updateInfo;
   final bool isForced;
+
   /// 已缓存的 APK 路径（如果有）
   final String? cachedApkPath;
 
@@ -126,13 +130,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
     } else {
       settings = const AppSettings();
     }
-    
+
     // 更新忽略版本
     final updatedSettings = settings.copyWith(
       ignoredVersion: widget.updateInfo.version,
     );
     await prefs.setString('app_settings', appSettingsToJson(updatedSettings));
-    
+
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -209,17 +213,19 @@ class _UpdateDialogState extends State<UpdateDialog> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                ...widget.updateInfo.sources.map((source) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => _startDownload(source),
-                      icon: const Icon(Icons.download),
-                      label: Text(source.name),
+                ...widget.updateInfo.sources.map(
+                  (source) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _startDownload(source),
+                        icon: const Icon(Icons.download),
+                        label: Text(source.name),
+                      ),
                     ),
                   ),
-                )),
+                ),
               ],
             ],
           ),
@@ -288,10 +294,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         // 只有非强制更新才显示取消和忽略按钮
         if (!widget.isForced) {
           return [
-            TextButton(
-              onPressed: _ignoreVersion,
-              child: const Text('忽略该版本'),
-            ),
+            TextButton(onPressed: _ignoreVersion, child: const Text('忽略该版本')),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('稍后再说'),
@@ -310,10 +313,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       case UpdateDialogState.failed:
         return [
-          TextButton(
-            onPressed: _retry,
-            child: const Text('重试'),
-          ),
+          TextButton(onPressed: _retry, child: const Text('重试')),
           if (!widget.isForced)
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

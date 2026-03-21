@@ -1,0 +1,27 @@
+name: 🙋 提问求助 | Ask a Question
+description: 提交一个使用问题或配置疑问 | Ask a usage or configuration question
+title: "[Question] "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请描述你想问的问题。
+        Please describe the question you want to ask.
+
+  - type: input
+    id: version
+    attributes:
+      label: 你使用了哪个版本？ | Which version did you use?
+      placeholder: 例如 1.0.1
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 请描述你的问题 | Please describe your question
+      placeholder: 请在这里输入你想问的问题
+    validations:
+      required: true

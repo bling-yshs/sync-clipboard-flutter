@@ -1,15 +1,14 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'package:media_scanner/media_scanner.dart';
-import 'package:sync_clipboard_flutter/constants/paths.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
-import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart' as clipboard_model;
+import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
+    as clipboard_model;
+import 'package:sync_clipboard_flutter/service/app_logger.dart';
+import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// 磁贴透明页面 - 上传剪贴板
@@ -21,7 +20,7 @@ class TileUploadPage extends StatefulWidget {
 }
 
 class _TileUploadPageState extends State<TileUploadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在上传剪贴板...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -37,7 +36,9 @@ class _TileUploadPageState extends State<TileUploadPage> {
     const maxAttempts = 15; // 3秒 / 200毫秒 = 15次
     for (int i = 0; i < maxAttempts; i++) {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData != null && clipboardData.text != null && clipboardData.text!.isNotEmpty) {
+      if (clipboardData != null &&
+          clipboardData.text != null &&
+          clipboardData.text!.isNotEmpty) {
         _log.i('第 ${i + 1} 次尝试获取剪贴板成功');
         return clipboardData;
       }
@@ -50,10 +51,10 @@ class _TileUploadPageState extends State<TileUploadPage> {
   Future<void> _uploadClipboard() async {
     try {
       _log.i('开始上传剪贴板...');
-      
+
       // 轮询获取剪贴板内容
       final clipboardData = await _getClipboardWithRetry();
-      
+
       if (clipboardData == null) {
         setState(() {
           _message = '剪贴板为空';
@@ -63,10 +64,10 @@ class _TileUploadPageState extends State<TileUploadPage> {
         _log.w('剪贴板为空（已重试3秒）');
         return;
       }
-      
+
       final clipboardText = clipboardData.text!;
       _log.d('读取到剪贴板内容，长度: ${clipboardText.length}');
-      
+
       // 2. 创建 Clipboard 对象
       final payload = buildTextClipboardPayload(clipboardText);
 
@@ -80,23 +81,21 @@ class _TileUploadPageState extends State<TileUploadPage> {
         );
       }
       await client.putSyncClipboardJson(payload.clipboard);
-      
+
       _log.i('上传剪贴板成功');
-      
+
       // 显示成功提示并立即退出
-      Fluttertoast.showToast(
-        msg: '剪贴版内容上传成功！🎉',
-      );
+      Fluttertoast.showToast(msg: '剪贴版内容上传成功！🎉');
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
-      _log.e('上传剪贴板失败 - 业务异常', error: e);
+      _log.e('上传剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
         _hasError = true;
       });
     } catch (e) {
-      _log.e('上传剪贴板失败 - 未知错误', error: e);
+      _log.e('上传剪贴板失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;
@@ -125,7 +124,7 @@ class TileDownloadPage extends StatefulWidget {
 }
 
 class _TileDownloadPageState extends State<TileDownloadPage> {
-  final Logger _log = Logger();
+  final Logger _log = AppLogger.logger;
   String _message = '正在下载剪贴板...';
   bool _isDownloading = true;
   bool _hasError = false;
@@ -138,50 +137,18 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
     _downloadClipboard();
   }
 
-  /// 获取唯一的文件名
-  Future<String> _getUniqueFilename(String directory, String originalFilename) async {
-    final lastDotIndex = originalFilename.lastIndexOf('.');
-    String baseName;
-    String extension;
-    
-    if (lastDotIndex != -1 && lastDotIndex > 0) {
-      baseName = originalFilename.substring(0, lastDotIndex);
-      extension = originalFilename.substring(lastDotIndex);
-    } else {
-      baseName = originalFilename;
-      extension = '';
-    }
-    
-    String candidatePath = '$directory/$originalFilename';
-    if (!await File(candidatePath).exists()) {
-      return originalFilename;
-    }
-    
-    int counter = 1;
-    while (true) {
-      final newFilename = '${baseName}_$counter$extension';
-      candidatePath = '$directory/$newFilename';
-      if (!await File(candidatePath).exists()) {
-        return newFilename;
-      }
-      counter++;
-      if (counter > 99) {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        return '${baseName}_$timestamp$extension';
-      }
-    }
-  }
-
   Future<void> _downloadClipboard() async {
     try {
       _log.i('开始下载剪贴板...');
-      
+
       // 1. 从服务器获取剪贴板数据
       final client = await SyncClipboardClient.create();
       _log.i('开始从服务器下载: ${client.config.url}');
       final clipboard = await client.getSyncClipboardJson();
-      
-      _log.d('下载到剪贴板数据 - 类型: ${clipboard.type.name}, 预览长度: ${clipboard.text.length}');
+
+      _log.d(
+        '下载到剪贴板数据 - 类型: ${clipboard.type.name}, 预览长度: ${clipboard.text.length}',
+      );
 
       // 2. 根据类型处理剪贴板数据
       switch (clipboard.type) {
@@ -201,15 +168,13 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
           _log.i('已将文本写入系统剪贴板');
 
           // 显示成功提示并立即退出
-          Fluttertoast.showToast(
-            msg: '已将以下内容写入剪贴版:\n$resolvedText',
-          );
+          Fluttertoast.showToast(msg: '已将以下内容写入剪贴版:\n$resolvedText');
           SystemNavigator.pop();
           break;
 
         case clipboard_model.ClipboardType.image:
         case clipboard_model.ClipboardType.file:
-          // 图片和文件类型：从服务器下载文件并保存到 Download 文件夹
+          // 图片和文件类型：从服务器下载文件并保存到指定下载目录
           final filename = clipboard.dataName ?? '';
 
           if (filename.isEmpty) {
@@ -234,29 +199,22 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
               if (total != -1) {
                 setState(() {
                   _downloadProgress = received / total;
-                  _message = '正在下载：${(received / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
+                  _message =
+                      '正在下载：${(received / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
                 });
               }
             },
           );
 
-          // 获取唯一的文件名
-          final uniqueFilename = await _getUniqueFilename(AppPaths.androidDownloadDir, filename);
-
-          // 保存文件到 Download 文件夹
-          final downloadPath = '${AppPaths.androidDownloadDir}/$uniqueFilename';
-          final file = File(downloadPath);
-          await file.writeAsBytes(fileBytes);
-
-          // 通知 Android 系统扫描文件
-          await MediaScanner.loadMedia(path: downloadPath);
-
-          _log.i('文件已下载到 Download 文件夹: $downloadPath');
+          final saved = await DownloadsSaveService.saveBytesToDownloads(
+            bytes: fileBytes,
+            fileName: filename,
+          );
+          final savedName = saved.displayName ?? filename;
+          _log.i('文件已下载到 ${saved.path}: $savedName, uri: ${saved.uri}');
 
           // 显示成功提示并立即退出
-          Fluttertoast.showToast(
-            msg: '文件已下载到 Download 文件夹\n$uniqueFilename',
-          );
+          Fluttertoast.showToast(msg: '文件已下载到 ${saved.path}\n$savedName');
           SystemNavigator.pop();
           break;
 
@@ -286,7 +244,8 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
               if (total != -1) {
                 setState(() {
                   _downloadProgress = received / total;
-                  _message = '正在下载：${(received / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
+                  _message =
+                      '正在下载：${(received / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
                 });
               }
             },
@@ -301,44 +260,23 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
           final now = DateTime.now();
           final formatter = DateFormat('yyyy-MM-dd_HH-mm-ss');
           final folderName = 'SyncClipboard_${formatter.format(now)}';
-          final extractPath = '${AppPaths.androidDownloadDir}/$folderName';
-
-          // 创建解压目标文件夹
-          final extractDir = Directory(extractPath);
-          await extractDir.create(recursive: true);
-          _log.i('创建解压目录: $extractPath');
 
           // 解压 zip 文件
           try {
-            final archive = ZipDecoder().decodeBytes(fileBytes);
-
-            for (final file in archive) {
-              final filePath = '$extractPath/${file.name}';
-
-              if (file.isFile) {
-                final outFile = File(filePath);
-                await outFile.create(recursive: true);
-                await outFile.writeAsBytes(file.content as List<int>);
-                _log.d('解压文件: ${file.name}');
-              } else {
-                await Directory(filePath).create(recursive: true);
-                _log.d('创建目录: ${file.name}');
-              }
-            }
-
-            _log.i('解压完成，共 ${archive.length} 个文件/文件夹');
-
-            // 通知 Android 系统扫描整个文件夹
-            await MediaScanner.loadMedia(path: extractPath);
+            final saved = await DownloadsSaveService.extractZipToDownloads(
+              zipBytes: fileBytes,
+              rootFolderName: folderName,
+            );
+            _log.i('解压完成，文件已保存到 ${saved.path}');
 
             // 显示成功提示并立即退出
             Fluttertoast.showToast(
-              msg: '已解压到 Download 文件夹！\n$folderName',
+              msg: '已解压到 ${saved.path}',
               toastLength: Toast.LENGTH_LONG,
             );
             SystemNavigator.pop();
           } catch (e) {
-            _log.e('解压失败', error: e);
+            _log.e('解压失败', error: e, stackTrace: StackTrace.current);
             setState(() {
               _message = '解压失败：$e';
               _isDownloading = false;
@@ -348,7 +286,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
           break;
       }
     } on SyncClipboardException catch (e) {
-      _log.e('下载剪贴板失败 - 业务异常', error: e);
+      _log.e('下载剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '下载失败：${e.message}';
         _isDownloading = false;
@@ -356,7 +294,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
         _showProgress = false;
       });
     } catch (e) {
-      _log.e('下载剪贴板失败 - 未知错误', error: e);
+      _log.e('下载剪贴板失败 - 未知错误', error: e, stackTrace: StackTrace.current);
       setState(() {
         _message = '下载失败：$e';
         _isDownloading = false;
@@ -379,7 +317,7 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 }
 
 /// 磁贴透明页面的通用实现
-/// 
+///
 /// 显示一个居中的半透明卡片，背景完全透明
 class _TileOverlayPage extends StatelessWidget {
   final String message;
@@ -448,13 +386,9 @@ class _TileOverlayPage extends StatelessWidget {
                         ),
                       )
                     else
-                      Icon(
-                        icon,
-                        size: 48,
-                        color: iconColor,
-                      ),
+                      Icon(icon, size: 48, color: iconColor),
                     const SizedBox(height: 16),
-                    
+
                     // 文本消息
                     Text(
                       message,
@@ -465,14 +399,16 @@ class _TileOverlayPage extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     // 下载进度条
                     if (downloadProgress != null) ...[
                       const SizedBox(height: 16),
                       LinearProgressIndicator(
                         value: downloadProgress,
                         backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -483,7 +419,7 @@ class _TileOverlayPage extends StatelessWidget {
                         ),
                       ),
                     ],
-                    
+
                     // 提示文本
                     if (!isLoading) ...[
                       const SizedBox(height: 16),

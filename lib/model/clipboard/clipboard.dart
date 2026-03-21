@@ -4,28 +4,20 @@ import 'dart:convert';
 part 'clipboard.freezed.dart';
 part 'clipboard.g.dart';
 
-Clipboard clipboardFromJson(String str) =>
-    Clipboard.fromJson(json.decode(str));
+Clipboard clipboardFromJson(String str) => Clipboard.fromJson(json.decode(str));
 
-String clipboardToJson(Clipboard data) =>
-    json.encode(data.toJson());
+String clipboardToJson(Clipboard data) => json.encode(data.toJson());
 
 @freezed
 abstract class Clipboard with _$Clipboard {
   const factory Clipboard({
     required ClipboardType type,
-    @JsonKey(
-      fromJson: _hashFromJson,
-      toJson: _hashToJson,
-      includeIfNull: false,
-    )
+    @JsonKey(fromJson: _hashFromJson, toJson: _hashToJson, includeIfNull: false)
     String? hash,
     required String text,
     required bool hasData,
-    @JsonKey(includeIfNull: false)
-    String? dataName,
-    @JsonKey(includeIfNull: false)
-    int? size,
+    @JsonKey(includeIfNull: false) String? dataName,
+    @JsonKey(includeIfNull: false) int? size,
   }) = _Clipboard;
 
   factory Clipboard.fromJson(Map<String, dynamic> json) =>
