@@ -75,10 +75,8 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
-            <!-- 官方推荐：标记为"活动"磁贴（Active Tile） -->
-            <meta-data
-                android:name="android.service.quicksettings.ACTIVE_TILE"
-                android:value="true" />
+            <!-- 使用被动磁贴（Passive Tile）模式：系统每次展开快速设置面板时会主动
+                 调用 onStartListening()，即使进程曾被系统杀掉也能自动恢复可点击状态 -->
         </service>
         
         <!-- Quick Settings Tile Service - 下载剪贴板 -->
@@ -91,10 +89,8 @@
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
-            <!-- 官方推荐：标记为"活动"磁贴（Active Tile） -->
-            <meta-data
-                android:name="android.service.quicksettings.ACTIVE_TILE"
-                android:value="true" />
+            <!-- 使用被动磁贴（Passive Tile）模式：系统每次展开快速设置面板时会主动
+                 调用 onStartListening()，即使进程曾被系统杀掉也能自动恢复可点击状态 -->
         </service>
         
         <!-- Don't delete the meta-data below.
