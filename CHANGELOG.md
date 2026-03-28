@@ -2,6 +2,7 @@
 
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
+## [0.3.1] - 2026-03-21
 
 ### ⚠ 重要提醒
 - 0.3.0 以后版本，仅能与 SyncClipboard v3.1.1 及以上版本搭配使用
@@ -82,7 +83,8 @@
 
 - 第一次正式发布 sync-clipboard-tauri
 
-[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.1
 [0.3.0]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.0
 [0.2.3]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.3
 [0.2.2]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.2.2
