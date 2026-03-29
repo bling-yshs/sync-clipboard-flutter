@@ -204,28 +204,28 @@ class _CustomNavigationBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
     return Container(
-      height: 80,
+      height: 80 + bottomPadding,
+      padding: EdgeInsets.only(bottom: bottomPadding),
       decoration: BoxDecoration(color: colorScheme.surfaceContainer),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(destinations.length, (index) {
-            final destination = destinations[index];
-            final isSelected = index == selectedIndex;
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(destinations.length, (index) {
+          final destination = destinations[index];
+          final isSelected = index == selectedIndex;
 
-            return Expanded(
-              child: _NavItem(
-                icon: destination.icon,
-                selectedIcon: destination.selectedIcon,
-                label: destination.label,
-                isSelected: isSelected,
-                onTap: () => onDestinationSelected(index),
-              ),
-            );
-          }),
-        ),
+          return Expanded(
+            child: _NavItem(
+              icon: destination.icon,
+              selectedIcon: destination.selectedIcon,
+              label: destination.label,
+              isSelected: isSelected,
+              onTap: () => onDestinationSelected(index),
+            ),
+          );
+        }),
       ),
     );
   }
