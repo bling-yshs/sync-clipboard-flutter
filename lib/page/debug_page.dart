@@ -8,11 +8,13 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
+import 'package:sync_clipboard_flutter/service/clipboard_upload_service.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
@@ -26,6 +28,8 @@ class DebugPage extends StatefulWidget {
 class _DebugPageState extends State<DebugPage> {
   // 创建 Logger 实例 - 用于记录日志
   final Logger _log = AppLogger.logger;
+  final ClipboardUploadService _clipboardUploadService =
+      ClipboardUploadService();
 
   // 手动上传相关状态
   bool _isUploading = false;
@@ -37,37 +41,16 @@ class _DebugPageState extends State<DebugPage> {
     try {
       _log.i('开始上传剪贴板...');
 
-      // 1. 读取系统剪贴板内容
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      final prepared = await _clipboardUploadService.readClipboardForUpload();
+      _log.d(
+        '已解析剪贴板内容，类型: ${prepared.clipboard.type.name}, hasData: ${prepared.hasDataFile}, size: ${prepared.clipboard.size ?? 0}',
+      );
 
-      if (clipboardData == null ||
-          clipboardData.text == null ||
-          clipboardData.text!.isEmpty) {
-        Fluttertoast.showToast(msg: '剪贴板为空，没有可上传的内容');
-        _log.w('剪贴板为空');
-        return;
-      }
-
-      final clipboardText = clipboardData.text!;
-      _log.d('读取到剪贴板内容，长度: ${clipboardText.length}');
-
-      // 2. 创建 Clipboard 对象
-      final payload = buildTextClipboardPayload(clipboardText);
-
-      // 3. 上传到服务器
-      final client = await SyncClipboardClient.create();
-      _log.i('开始上传到服务器: ${client.config.url}');
-      if (payload.hasDataFile) {
-        await client.putSyncClipboardFile(
-          payload.dataName!,
-          payload.dataBytes!,
-        );
-      }
-      await client.putSyncClipboardJson(payload.clipboard);
+      await _clipboardUploadService.uploadPreparedClipboard(prepared);
 
       _log.i('上传剪贴板成功');
 
-      Fluttertoast.showToast(msg: '剪贴版内容上传成功！🎉');
+      Fluttertoast.showToast(msg: prepared.successMessage);
     } on SyncClipboardException catch (e) {
       _log.e('上传剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);
 
@@ -217,6 +200,14 @@ class _DebugPageState extends State<DebugPage> {
       _log.e('手动上传文件失败', error: e, stackTrace: StackTrace.current);
       Fluttertoast.showToast(msg: '操作失败：$e');
     }
+  }
+
+  Future<void> _openAdvancedDebugPage() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => const _AdvancedDebugPage(),
+      ),
+    );
   }
 
   /// 显示提示对话框
@@ -419,6 +410,17 @@ class _DebugPageState extends State<DebugPage> {
             ),
           ),
 
+          const SizedBox(height: 16),
+
+          OutlinedButton.icon(
+            onPressed: _openAdvancedDebugPage,
+            icon: const Icon(Icons.science_outlined),
+            label: const Text('高级调试'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+
           if (_isUploading) ...[
             const SizedBox(height: 12),
             LinearProgressIndicator(value: _uploadProgress),
@@ -432,6 +434,59 @@ class _DebugPageState extends State<DebugPage> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _AdvancedDebugPage extends StatelessWidget {
+  const _AdvancedDebugPage();
+
+  Future<void> _inspectClipboardTextType() async {
+    final clipboard = SystemClipboard.instance;
+    if (clipboard == null) {
+      Fluttertoast.showToast(msg: '当前平台不支持 super_clipboard');
+      return;
+    }
+
+    final reader = await clipboard.read();
+    if (reader.items.isEmpty) {
+      Fluttertoast.showToast(msg: '剪贴板为空');
+      return;
+    }
+
+    final item = reader.items.first;
+    if (item.canProvide(Formats.htmlText)) {
+      Fluttertoast.showToast(msg: '读取到 HTML');
+      return;
+    }
+    if (item.canProvide(Formats.plainText)) {
+      Fluttertoast.showToast(msg: '读取到纯文本');
+      return;
+    }
+
+    Fluttertoast.showToast(msg: '未读取到文本类型');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('高级调试')),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              onPressed: _inspectClipboardTextType,
+              icon: const Icon(Icons.search),
+              label: const Text('读取剪贴板文本类型'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
