@@ -72,7 +72,10 @@ class _ConfigPageState extends State<ConfigPage> {
   Future<void> _saveSettings(AppSettings newSettings) async {
     _settingsWriteQueue = _settingsWriteQueue.then((_) async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_settingsStorageKey, appSettingsToJson(newSettings));
+      await prefs.setString(
+        _settingsStorageKey,
+        appSettingsToJson(newSettings),
+      );
       if (!mounted) {
         return;
       }
@@ -123,7 +126,9 @@ class _ConfigPageState extends State<ConfigPage> {
     }
 
     final safeRelativePath = DownloadsSaveService.normalizeRelativePath(value);
-    final newSettings = _settings.copyWith(downloadRelativePath: safeRelativePath);
+    final newSettings = _settings.copyWith(
+      downloadRelativePath: safeRelativePath,
+    );
     unawaited(_saveSettings(newSettings));
   }
 
@@ -131,6 +136,10 @@ class _ConfigPageState extends State<ConfigPage> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const LogViewPage()));
+  }
+
+  void _dismissFocus(PointerDownEvent _) {
+    FocusManager.instance.primaryFocus?.unfocus();
   }
 
   /// 构建分类标题
@@ -185,6 +194,7 @@ class _ConfigPageState extends State<ConfigPage> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: TextField(
             controller: _downloadPathController,
+            onTapOutside: _dismissFocus,
             decoration: InputDecoration(
               labelText: '子目录',
               border: const OutlineInputBorder(),
