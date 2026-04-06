@@ -132,6 +132,10 @@ class _ServerConfigAutoSwitchPageState
         .toList();
   }
 
+  void _dismissFocus(PointerDownEvent _) {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   String _permissionText() {
     if (_permissionStatus.isGranted) {
       return '已授权';
@@ -224,6 +228,7 @@ class _ServerConfigAutoSwitchPageState
               children: [
                 TextField(
                   controller: _wifiNamesController,
+                  onTapOutside: _dismissFocus,
                   minLines: 4,
                   maxLines: 8,
                   decoration: const InputDecoration(

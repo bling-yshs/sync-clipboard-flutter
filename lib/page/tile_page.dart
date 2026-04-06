@@ -8,8 +8,8 @@ import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
+import 'package:sync_clipboard_flutter/service/clipboard_upload_service.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
-import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 /// 磁贴透明页面 - 上传剪贴板
 class TileUploadPage extends StatefulWidget {
@@ -21,6 +21,8 @@ class TileUploadPage extends StatefulWidget {
 
 class _TileUploadPageState extends State<TileUploadPage> {
   final Logger _log = AppLogger.logger;
+  final ClipboardUploadService _clipboardUploadService =
+      ClipboardUploadService();
   String _message = '正在上传剪贴板...';
   bool _isUploading = true;
   bool _hasError = false;
@@ -31,61 +33,43 @@ class _TileUploadPageState extends State<TileUploadPage> {
     _uploadClipboard();
   }
 
-  /// 轮询获取剪贴板内容，每200毫秒重试一次，最多3秒
-  Future<ClipboardData?> _getClipboardWithRetry() async {
-    const maxAttempts = 15; // 3秒 / 200毫秒 = 15次
+  Future<PreparedClipboardUpload> _readClipboardWithRetry() async {
+    const maxAttempts = 15;
+    SyncClipboardException? lastClipboardError;
+
     for (int i = 0; i < maxAttempts; i++) {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData != null &&
-          clipboardData.text != null &&
-          clipboardData.text!.isNotEmpty) {
-        _log.i('第 ${i + 1} 次尝试获取剪贴板成功');
-        return clipboardData;
+      try {
+        final prepared = await _clipboardUploadService.readClipboardForUpload();
+        _log.i('第 ${i + 1} 次尝试读取剪贴板成功');
+        return prepared;
+      } on SyncClipboardException catch (e) {
+        if (e.message != '剪贴板为空') {
+          rethrow;
+        }
+        lastClipboardError = e;
+        _log.d('第 ${i + 1} 次尝试读取剪贴板为空，200 毫秒后重试...');
+        await Future.delayed(const Duration(milliseconds: 200));
       }
-      _log.d('第 ${i + 1} 次尝试获取剪贴板失败，200毫秒后重试...');
-      await Future.delayed(const Duration(milliseconds: 200));
     }
-    return null;
+
+    throw lastClipboardError ?? SyncClipboardException('剪贴板为空');
   }
 
   Future<void> _uploadClipboard() async {
     try {
       _log.i('开始上传剪贴板...');
 
-      // 轮询获取剪贴板内容
-      final clipboardData = await _getClipboardWithRetry();
+      final prepared = await _readClipboardWithRetry();
+      _log.d(
+        '已解析剪贴板内容，类型: ${prepared.clipboard.type.name}, hasData: ${prepared.hasDataFile}, size: ${prepared.clipboard.size ?? 0}',
+      );
 
-      if (clipboardData == null) {
-        setState(() {
-          _message = '剪贴板为空';
-          _isUploading = false;
-          _hasError = true;
-        });
-        _log.w('剪贴板为空（已重试3秒）');
-        return;
-      }
-
-      final clipboardText = clipboardData.text!;
-      _log.d('读取到剪贴板内容，长度: ${clipboardText.length}');
-
-      // 2. 创建 Clipboard 对象
-      final payload = buildTextClipboardPayload(clipboardText);
-
-      // 3. 上传到服务器
-      final client = await SyncClipboardClient.create();
-      _log.i('开始上传到服务器: ${client.config.url}');
-      if (payload.hasDataFile) {
-        await client.putSyncClipboardFile(
-          payload.dataName!,
-          payload.dataBytes!,
-        );
-      }
-      await client.putSyncClipboardJson(payload.clipboard);
+      await _clipboardUploadService.uploadPreparedClipboard(prepared);
 
       _log.i('上传剪贴板成功');
 
       // 显示成功提示并立即退出
-      Fluttertoast.showToast(msg: '剪贴版内容上传成功！🎉');
+      Fluttertoast.showToast(msg: prepared.successMessage);
       SystemNavigator.pop();
     } on SyncClipboardException catch (e) {
       _log.e('上传剪贴板失败 - 业务异常', error: e, stackTrace: StackTrace.current);

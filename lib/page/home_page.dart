@@ -35,6 +35,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
+  void _dismissFocus(PointerDownEvent _) {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   /// 同步 controller 与 state
   void _syncControllers(ServerConfigState state) {
     if (_nameController.text != state.name) {
@@ -219,6 +223,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _nameController,
+                      onTapOutside: _dismissFocus,
                       decoration: const InputDecoration(
                         labelText: '配置名称（可选）',
                         hintText: '留空则显示服务器地址',
@@ -234,6 +239,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _urlController,
+                      onTapOutside: _dismissFocus,
                       decoration: const InputDecoration(
                         labelText: '服务器地址',
                         hintText: '请输入服务器地址',
@@ -250,6 +256,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _usernameController,
+                      onTapOutside: _dismissFocus,
                       decoration: const InputDecoration(
                         labelText: '用户名',
                         hintText: '请输入用户名',
@@ -265,6 +272,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: _passwordController,
+                      onTapOutside: _dismissFocus,
                       decoration: const InputDecoration(
                         labelText: '密码',
                         hintText: '请输入密码',
