@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_clipboard/super_clipboard.dart';
@@ -9,9 +10,6 @@ import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
-
-const _htmlMarkPattern =
-    r'(<[^<]*?>)|(<\s*?/[^<]*?>)|(<[^<]*?/\s*?>)';
 
 class PreparedClipboardUpload {
   final clipboard_model.Clipboard clipboard;
@@ -63,26 +61,9 @@ class ClipboardUploadService {
       }
     }
 
-    for (final item in reader.items) {
-      final text = await item.readValue(Formats.plainText);
-      final normalizedText = text?.trim();
-      if (normalizedText != null && normalizedText.isNotEmpty) {
-        _log.d('通过 super_clipboard 读取到纯文本，长度: ${normalizedText.length}');
-        return _buildTextUpload(normalizedText);
-      }
-    }
-
-    // 这里好像会因为机制问题，实际上根本走不到这里，html格式会直接被上方的plainText给提前读取到
-    for (final item in reader.items) {
-      final html = await item.readValue(Formats.htmlText);
-      final normalizedHtml = html?.trim();
-      if (normalizedHtml != null && normalizedHtml.isNotEmpty) {
-        final plainText = _htmlToPlainText(normalizedHtml);
-        if (plainText.isNotEmpty) {
-          _log.d('通过 super_clipboard 读取到富文本，已转纯文本，长度: ${plainText.length}');
-          return _buildTextUpload(plainText);
-        }
-      }
+    final textUpload = await _readTextUploadWithFlutterClipboard();
+    if (textUpload != null) {
+      return textUpload;
     }
 
     for (final item in reader.items) {
@@ -127,6 +108,17 @@ class ClipboardUploadService {
           : Uint8List.fromList(payload.dataBytes!),
       successMessage: '剪贴板文本上传成功！',
     );
+  }
+
+  Future<PreparedClipboardUpload?> _readTextUploadWithFlutterClipboard() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    final normalizedText = clipboardData?.text?.trim();
+    if (normalizedText == null || normalizedText.isEmpty) {
+      return null;
+    }
+
+    _log.d('通过 Flutter Clipboard 读取到文本，长度: ${normalizedText.length}');
+    return _buildTextUpload(normalizedText);
   }
 
   Future<PreparedClipboardUpload?> _readImageUpload(
@@ -222,10 +214,6 @@ class ClipboardUploadService {
       completer.complete(null);
     }
     return completer.future;
-  }
-
-  String _htmlToPlainText(String html) {
-    return html.replaceAll(RegExp(_htmlMarkPattern), '').trim();
   }
 
   clipboard_model.ClipboardType _inferFileType(String filename) {
