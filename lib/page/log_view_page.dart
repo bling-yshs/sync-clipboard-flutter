@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 
@@ -13,6 +15,8 @@ class LogViewPage extends StatefulWidget {
 }
 
 class _LogViewPageState extends State<LogViewPage> {
+  static const String _settingsStorageKey = 'app_settings';
+
   final DateFormat _timeFormat = DateFormat('HH:mm:ss');
 
   List<_ParsedLogEntry> _allLogs = [];
@@ -22,10 +26,11 @@ class _LogViewPageState extends State<LogViewPage> {
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _loadPageData();
   }
 
-  Future<void> _loadLogs() async {
+  Future<void> _loadPageData() async {
+    final selectedLevel = await _loadSelectedLevel();
     final logs = await AppLogger.instance.readLogs();
     if (!mounted) {
       return;
@@ -45,8 +50,47 @@ class _LogViewPageState extends State<LogViewPage> {
 
     setState(() {
       _allLogs = parsedLogs;
+      _selectedLevel = selectedLevel;
       _isLoading = false;
     });
+  }
+
+  Future<_LogLevelFilter> _loadSelectedLevel() async {
+    final prefs = await SharedPreferences.getInstance();
+    final settingsJson = prefs.getString(_settingsStorageKey);
+
+    if (settingsJson == null || settingsJson.isEmpty) {
+      return _LogLevelFilter.info;
+    }
+
+    try {
+      final settings = appSettingsFromJson(settingsJson);
+      return _logLevelFilterFromStorageValue(settings.logViewLevelFilter);
+    } catch (_) {
+      return _LogLevelFilter.info;
+    }
+  }
+
+  Future<void> _saveSelectedLevel(_LogLevelFilter level) async {
+    final prefs = await SharedPreferences.getInstance();
+    final settingsJson = prefs.getString(_settingsStorageKey);
+
+    AppSettings settings;
+    if (settingsJson != null && settingsJson.isNotEmpty) {
+      try {
+        settings = appSettingsFromJson(settingsJson);
+      } catch (_) {
+        settings = const AppSettings();
+      }
+    } else {
+      settings = const AppSettings();
+    }
+
+    final updatedSettings = settings.copyWith(logViewLevelFilter: level.name);
+    await prefs.setString(
+      _settingsStorageKey,
+      appSettingsToJson(updatedSettings),
+    );
   }
 
   void _showToast(String message) {
@@ -215,9 +259,23 @@ class _LogViewPageState extends State<LogViewPage> {
       return;
     }
 
+    await _saveSelectedLevel(selected);
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _selectedLevel = selected;
     });
+  }
+
+  _LogLevelFilter _logLevelFilterFromStorageValue(String value) {
+    for (final filter in _LogLevelFilter.values) {
+      if (filter.name == value) {
+        return filter;
+      }
+    }
+    return _LogLevelFilter.info;
   }
 
   Color _levelColor(String level) {
@@ -301,7 +359,7 @@ class _LogViewPageState extends State<LogViewPage> {
     }
 
     _showToast('日志已清空');
-    await _loadLogs();
+    await _loadPageData();
   }
 
   @override
@@ -377,7 +435,7 @@ class _LogViewPageState extends State<LogViewPage> {
                         },
                       ),
                       const Spacer(),
-                      Text('共 ${visibleLogs.length} 条'),
+                      Text('最新在上 · 共 ${visibleLogs.length} 条'),
                     ],
                   ),
                 ),
@@ -398,6 +456,31 @@ class _LogViewPageState extends State<LogViewPage> {
                                 children: [
                                   Row(
                                     children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.secondaryContainer,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '#${log.order + 1}',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSecondaryContainer,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
                                       const Icon(Icons.schedule, size: 14),
                                       const SizedBox(width: 6),
                                       Text(

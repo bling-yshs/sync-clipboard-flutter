@@ -31,6 +31,9 @@ abstract class AppSettings with _$AppSettings {
     /// 例如 A/B/C，最终保存到 /Download/A/B/C
     @Default('') String downloadRelativePath,
 
+    /// 日志查看页默认选中的日志级别
+    @Default('info') String logViewLevelFilter,
+
     /// 被忽略的更新版本号
     /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
     /// 当有新版本发布时，会自动清除该设置
