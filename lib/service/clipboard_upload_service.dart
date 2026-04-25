@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:super_clipboard/super_clipboard.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
+import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
+import 'package:sync_clipboard_flutter/service/shizuku_clipboard_service.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
 
 class PreparedClipboardUpload {
@@ -30,9 +33,16 @@ class PreparedClipboardUpload {
 class ClipboardUploadService {
   ClipboardUploadService();
 
+  static const String _settingsStorageKey = 'app_settings';
+
   final Logger _log = AppLogger.logger;
 
   Future<PreparedClipboardUpload> readClipboardForUpload() async {
+    final shizukuTextUpload = await _readTextUploadWithShizuku();
+    if (shizukuTextUpload != null) {
+      return shizukuTextUpload;
+    }
+
     final clipboard = SystemClipboard.instance;
     if (clipboard == null) {
       throw SyncClipboardException('当前平台不支持增强剪贴板读取');
@@ -109,6 +119,30 @@ class ClipboardUploadService {
     );
   }
 
+  Future<PreparedClipboardUpload?> _readTextUploadWithShizuku() async {
+    if (!await _isShizukuClipboardEnabled()) {
+      return null;
+    }
+
+    if (!await ShizukuClipboardService.isAvailable()) {
+      _log.d('Shizuku 未运行，跳过 Shizuku 剪贴板读取');
+      return null;
+    }
+
+    if (!await ShizukuClipboardService.hasPermission()) {
+      _log.d('Shizuku 未授权，跳过 Shizuku 剪贴板读取');
+      return null;
+    }
+
+    final text = await ShizukuClipboardService.getString();
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+
+    _log.d('通过 Shizuku 读取到文本，长度: ${text.length}');
+    return _buildTextUpload(text);
+  }
+
   Future<PreparedClipboardUpload?> _readTextUploadWithFlutterClipboard() async {
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
     final normalizedText = clipboardData?.text?.trim();
@@ -118,6 +152,21 @@ class ClipboardUploadService {
 
     _log.d('通过 Flutter Clipboard 读取到文本，长度: ${normalizedText.length}');
     return _buildTextUpload(normalizedText);
+  }
+
+  Future<bool> _isShizukuClipboardEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedJson = prefs.getString(_settingsStorageKey);
+    if (savedJson == null || savedJson.isEmpty) {
+      return false;
+    }
+
+    try {
+      return appSettingsFromJson(savedJson).enableShizukuClipboard;
+    } catch (e) {
+      _log.w('读取 Shizuku 剪贴板设置失败', error: e);
+      return false;
+    }
   }
 
   Future<PreparedClipboardUpload?> _readImageUpload(
@@ -196,10 +245,7 @@ class ClipboardUploadService {
         try {
           final bytes = await file.readAll();
           completer.complete(
-            _ReadFileResult(
-              bytes: bytes,
-              fileName: file.fileName,
-            ),
+            _ReadFileResult(bytes: bytes, fileName: file.fileName),
           );
         } catch (e) {
           completer.completeError(e);
@@ -267,10 +313,7 @@ class _ReadFileResult {
   final Uint8List bytes;
   final String? fileName;
 
-  const _ReadFileResult({
-    required this.bytes,
-    required this.fileName,
-  });
+  const _ReadFileResult({required this.bytes, required this.fileName});
 }
 
 class _ImageFormatCandidate {
@@ -305,6 +348,4 @@ const _imageExtensions = <String>{
   '.tif',
 };
 
-const _binaryFirstFormats = <String>{
-  'text/uri-list',
-};
+const _binaryFirstFormats = <String>{'text/uri-list'};

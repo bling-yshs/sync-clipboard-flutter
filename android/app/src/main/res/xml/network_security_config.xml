@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许用户配置的 HTTP 同步服务器使用明文连接。 -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

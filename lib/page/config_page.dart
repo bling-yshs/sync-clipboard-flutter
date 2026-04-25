@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
+import 'package:sync_clipboard_flutter/page/background_auto_sync_page.dart';
 import 'package:sync_clipboard_flutter/page/log_view_page.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
 
@@ -138,6 +139,17 @@ class _ConfigPageState extends State<ConfigPage> {
     ).push(MaterialPageRoute(builder: (_) => const LogViewPage()));
   }
 
+  Future<void> _openBackgroundAutoSyncPage() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const BackgroundAutoSyncPage()),
+    );
+    await _loadSettings();
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
+  }
+
   void _dismissFocus(PointerDownEvent _) {
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -184,6 +196,17 @@ class _ConfigPageState extends State<ConfigPage> {
           subtitle: const Text('关闭后将不会在启动时自动检查更新'),
           value: _settings.autoCheckUpdate,
           onChanged: _toggleAutoCheckUpdate,
+        ),
+        ListTile(
+          leading: const Icon(Icons.sync),
+          title: const Text('后台自动同步'),
+          subtitle: const Text('使用 Shizuku 读取剪贴板'),
+          trailing: IconButton(
+            tooltip: '打开后台自动同步设置',
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _openBackgroundAutoSyncPage,
+          ),
+          onTap: _openBackgroundAutoSyncPage,
         ),
         ListTile(
           leading: const Icon(Icons.folder_outlined),

@@ -34,6 +34,18 @@ abstract class AppSettings with _$AppSettings {
     /// 日志查看页默认选中的日志级别
     @Default('info') String logViewLevelFilter,
 
+    /// 是否启用 Shizuku 读取后台剪贴板文本
+    @Default(false) bool enableShizukuClipboard,
+
+    /// 后台同步读取本地剪贴板的间隔秒数
+    @Default(3.0) double clipboardCheckIntervalSeconds,
+
+    /// 后台同步检查服务器剪贴板内容的间隔秒数
+    @Default(3.0) double serverContentCheckIntervalSeconds,
+
+    /// 是否记录后台自动同步运行日志
+    @Default(false) bool enableBackgroundAutoSyncLog,
+
     /// 被忽略的更新版本号
     /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
     /// 当有新版本发布时，会自动清除该设置

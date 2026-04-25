@@ -12,6 +12,13 @@ _AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) => _AppSettings(
   manualUploadDialogShown: json['manualUploadDialogShown'] as bool? ?? false,
   downloadRelativePath: json['downloadRelativePath'] as String? ?? '',
   logViewLevelFilter: json['logViewLevelFilter'] as String? ?? 'info',
+  enableShizukuClipboard: json['enableShizukuClipboard'] as bool? ?? false,
+  clipboardCheckIntervalSeconds:
+      (json['clipboardCheckIntervalSeconds'] as num?)?.toDouble() ?? 3.0,
+  serverContentCheckIntervalSeconds:
+      (json['serverContentCheckIntervalSeconds'] as num?)?.toDouble() ?? 3.0,
+  enableBackgroundAutoSyncLog:
+      json['enableBackgroundAutoSyncLog'] as bool? ?? false,
   ignoredVersion: json['ignoredVersion'] as String?,
 );
 
@@ -22,5 +29,10 @@ Map<String, dynamic> _$AppSettingsToJson(_AppSettings instance) =>
       'manualUploadDialogShown': instance.manualUploadDialogShown,
       'downloadRelativePath': instance.downloadRelativePath,
       'logViewLevelFilter': instance.logViewLevelFilter,
+      'enableShizukuClipboard': instance.enableShizukuClipboard,
+      'clipboardCheckIntervalSeconds': instance.clipboardCheckIntervalSeconds,
+      'serverContentCheckIntervalSeconds':
+          instance.serverContentCheckIntervalSeconds,
+      'enableBackgroundAutoSyncLog': instance.enableBackgroundAutoSyncLog,
       'ignoredVersion': instance.ignoredVersion,
     };

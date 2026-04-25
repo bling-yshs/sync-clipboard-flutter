@@ -26,6 +26,11 @@ class AppLogger {
     return _appLogOutput.readLogs();
   }
 
+  /// 直接从日志文件重新读取日志。
+  Future<List<String>> readLogsFromFile() async {
+    return _appLogOutput.readLogsFromFile();
+  }
+
   Future<void> clearLogs() async {
     await _appLogOutput.clearLogs();
   }
@@ -181,6 +186,30 @@ class _AppLogOutput extends LogOutput {
     if (!_isInitialized) {
       await init();
     }
+    return List<String>.from(_logs);
+  }
+
+  /// 直接从日志文件重新读取日志并同步内存缓存。
+  Future<List<String>> readLogsFromFile() async {
+    if (!_isInitialized) {
+      await init();
+    }
+
+    await _writeQueue;
+    final file = _logFile;
+    if (file == null || !await file.exists()) {
+      _logs.clear();
+      return <String>[];
+    }
+
+    final existingLines = await file.readAsLines();
+    _logs
+      ..clear()
+      ..addAll(
+        existingLines.length > _maxLines
+            ? existingLines.sublist(existingLines.length - _maxLines)
+            : existingLines,
+      );
     return List<String>.from(_logs);
   }
 

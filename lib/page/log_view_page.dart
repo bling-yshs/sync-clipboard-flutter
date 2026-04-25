@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
@@ -14,7 +16,8 @@ class LogViewPage extends StatefulWidget {
   State<LogViewPage> createState() => _LogViewPageState();
 }
 
-class _LogViewPageState extends State<LogViewPage> {
+class _LogViewPageState extends State<LogViewPage>
+    with WidgetsBindingObserver {
   static const String _settingsStorageKey = 'app_settings';
 
   final DateFormat _timeFormat = DateFormat('HH:mm:ss');
@@ -22,16 +25,38 @@ class _LogViewPageState extends State<LogViewPage> {
   List<_ParsedLogEntry> _allLogs = [];
   bool _isLoading = true;
   _LogLevelFilter _selectedLevel = _LogLevelFilter.info;
+  StreamSubscription<FileSystemEvent>? _logFileSubscription;
+  Timer? _reloadDebounceTimer;
 
+  /// 初始化日志数据和文件监听。
   @override
   void initState() {
     super.initState();
-    _loadPageData();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_loadPageData());
+    unawaited(_startLogFileWatch());
+  }
+
+  /// 释放日志文件监听和刷新防抖计时器。
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _reloadDebounceTimer?.cancel();
+    unawaited(_logFileSubscription?.cancel());
+    super.dispose();
+  }
+
+  /// 应用回到前台时强制重读日志文件。
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _scheduleLogReload(Duration.zero);
+    }
   }
 
   Future<void> _loadPageData() async {
     final selectedLevel = await _loadSelectedLevel();
-    final logs = await AppLogger.instance.readLogs();
+    final logs = await AppLogger.instance.readLogsFromFile();
     if (!mounted) {
       return;
     }
@@ -52,6 +77,30 @@ class _LogViewPageState extends State<LogViewPage> {
       _allLogs = parsedLogs;
       _selectedLevel = selectedLevel;
       _isLoading = false;
+    });
+  }
+
+  /// 监听日志文件变化并刷新页面数据。
+  Future<void> _startLogFileWatch() async {
+    final logFilePath = AppLogger.instance.logFilePath;
+    if (logFilePath == null || logFilePath.isEmpty) {
+      return;
+    }
+
+    await _logFileSubscription?.cancel();
+    _logFileSubscription = File(logFilePath).watch().listen(
+      (_) {
+        _scheduleLogReload();
+      },
+      onError: (_) {},
+    );
+  }
+
+  /// 防抖触发日志文件重读。
+  void _scheduleLogReload([Duration delay = const Duration(milliseconds: 300)]) {
+    _reloadDebounceTimer?.cancel();
+    _reloadDebounceTimer = Timer(delay, () {
+      unawaited(_loadPageData());
     });
   }
 
