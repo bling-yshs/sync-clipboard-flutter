@@ -111,6 +111,20 @@ class BackgroundClipboardSyncService {
     }
   }
 
+  /// 将当前任务从 Android 最近任务列表中隐藏。
+  static Future<bool> hideFromRecents() async {
+    if (!Platform.isAndroid) {
+      return false;
+    }
+
+    try {
+      return await _channel.invokeMethod<bool>('hideFromRecents') ?? false;
+    } catch (e) {
+      AppLogger.logger.w('隐藏最近任务列表失败', error: e);
+      return false;
+    }
+  }
+
   /// 读取应用设置。
   static Future<AppSettings> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();

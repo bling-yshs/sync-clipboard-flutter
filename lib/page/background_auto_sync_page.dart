@@ -217,6 +217,17 @@ class _BackgroundAutoSyncPageState extends State<BackgroundAutoSyncPage> {
     }
   }
 
+  /// 将当前任务从最近任务列表中隐藏。
+  Future<void> _hideFromRecents() async {
+    final hidden = await BackgroundClipboardSyncService.hideFromRecents();
+    if (hidden) {
+      _showSnackBar('已从最近任务列表中隐藏');
+      return;
+    }
+
+    _showSnackBar('无法隐藏最近任务列表');
+  }
+
   /// 解析并规范化秒级小数间隔。
   double? _parseInterval(String value) {
     final parsed = double.tryParse(value.trim());
@@ -283,6 +294,17 @@ class _BackgroundAutoSyncPageState extends State<BackgroundAutoSyncPage> {
             subtitle: const Text('记录后台自动同步运行日志'),
             value: _settings.enableBackgroundAutoSyncLog,
             onChanged: _saveBackgroundAutoSyncLog,
+          ),
+          ListTile(
+            leading: const Icon(Icons.visibility_off),
+            title: const Text('在最近任务列表中隐藏'),
+            subtitle: const Text('记得先锁定此App，防止被一键清理'),
+            trailing: IconButton(
+              tooltip: '隐藏',
+              icon: const Icon(Icons.chevron_right),
+              onPressed: _hideFromRecents,
+            ),
+            onTap: _hideFromRecents,
           ),
           ListTile(
             leading: const Icon(Icons.battery_saver),

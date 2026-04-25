@@ -1,5 +1,7 @@
 package com.yshs.sync_clipboard_flutter
 
+import android.app.Activity
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -36,6 +38,9 @@ object BackgroundClipboardSyncChannel {
                     }
                     "openBatteryOptimizationSettings" -> {
                         result.success(openBatteryOptimizationSettings(context))
+                    }
+                    "hideFromRecents" -> {
+                        result.success(hideFromRecents(context))
                     }
                     else -> result.notImplemented()
                 }
@@ -94,8 +99,7 @@ object BackgroundClipboardSyncChannel {
         return try {
             val appContext = context.applicationContext
             val powerManager = appContext.getSystemService(Context.POWER_SERVICE) as PowerManager
-            val action = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                !powerManager.isIgnoringBatteryOptimizations(appContext.packageName)
+            val action = if (!powerManager.isIgnoringBatteryOptimizations(appContext.packageName)
             ) {
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
             } else {
@@ -120,6 +124,21 @@ object BackgroundClipboardSyncChannel {
             } catch (_: Exception) {
                 false
             }
+        }
+    }
+
+    /**
+     * 将当前 Activity 所在任务从最近任务列表中隐藏。
+     */
+    private fun hideFromRecents(context: Context): Boolean {
+        return try {
+            val activity = context as? Activity ?: return false
+            val activityManager = activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            val appTask = activityManager.appTasks.firstOrNull() ?: return false
+            appTask.setExcludeFromRecents(true)
+            true
+        } catch (_: Exception) {
+            false
         }
     }
 
