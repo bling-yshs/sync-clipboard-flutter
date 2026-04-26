@@ -39,8 +39,9 @@ object BackgroundClipboardSyncChannel {
                     "openBatteryOptimizationSettings" -> {
                         result.success(openBatteryOptimizationSettings(context))
                     }
-                    "hideFromRecents" -> {
-                        result.success(hideFromRecents(context))
+                    "setExcludeFromRecents" -> {
+                        val args = call.arguments as? Map<*, *>
+                        result.success(setExcludeFromRecents(context, args))
                     }
                     else -> result.notImplemented()
                 }
@@ -128,14 +129,14 @@ object BackgroundClipboardSyncChannel {
     }
 
     /**
-     * 将当前 Activity 所在任务从最近任务列表中隐藏。
+     * 设置当前 Activity 所在任务是否从最近任务列表中隐藏。
      */
-    private fun hideFromRecents(context: Context): Boolean {
+    private fun setExcludeFromRecents(context: Context, args: Map<*, *>?): Boolean {
         return try {
             val activity = context as? Activity ?: return false
             val activityManager = activity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             val appTask = activityManager.appTasks.firstOrNull() ?: return false
-            appTask.setExcludeFromRecents(true)
+            appTask.setExcludeFromRecents(args?.get("exclude") as? Boolean ?: false)
             true
         } catch (_: Exception) {
             false

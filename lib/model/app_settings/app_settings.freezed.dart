@@ -28,7 +28,8 @@ mixin _$AppSettings {
  bool get enableShizukuClipboard;/// 后台同步读取本地剪贴板的间隔秒数
  double get clipboardCheckIntervalSeconds;/// 后台同步检查服务器剪贴板内容的间隔秒数
  double get serverContentCheckIntervalSeconds;/// 是否记录后台自动同步运行日志
- bool get enableBackgroundAutoSyncLog;/// 被忽略的更新版本号
+ bool get enableBackgroundAutoSyncLog;/// 是否在 Android 最近任务列表中隐藏当前任务
+ bool get excludeFromRecents;/// 被忽略的更新版本号
 /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
 /// 当有新版本发布时，会自动清除该设置
  String? get ignoredVersion;
@@ -44,16 +45,16 @@ $AppSettingsCopyWith<AppSettings> get copyWith => _$AppSettingsCopyWithImpl<AppS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.enableShizukuClipboard, enableShizukuClipboard) || other.enableShizukuClipboard == enableShizukuClipboard)&&(identical(other.clipboardCheckIntervalSeconds, clipboardCheckIntervalSeconds) || other.clipboardCheckIntervalSeconds == clipboardCheckIntervalSeconds)&&(identical(other.serverContentCheckIntervalSeconds, serverContentCheckIntervalSeconds) || other.serverContentCheckIntervalSeconds == serverContentCheckIntervalSeconds)&&(identical(other.enableBackgroundAutoSyncLog, enableBackgroundAutoSyncLog) || other.enableBackgroundAutoSyncLog == enableBackgroundAutoSyncLog)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.enableShizukuClipboard, enableShizukuClipboard) || other.enableShizukuClipboard == enableShizukuClipboard)&&(identical(other.clipboardCheckIntervalSeconds, clipboardCheckIntervalSeconds) || other.clipboardCheckIntervalSeconds == clipboardCheckIntervalSeconds)&&(identical(other.serverContentCheckIntervalSeconds, serverContentCheckIntervalSeconds) || other.serverContentCheckIntervalSeconds == serverContentCheckIntervalSeconds)&&(identical(other.enableBackgroundAutoSyncLog, enableBackgroundAutoSyncLog) || other.enableBackgroundAutoSyncLog == enableBackgroundAutoSyncLog)&&(identical(other.excludeFromRecents, excludeFromRecents) || other.excludeFromRecents == excludeFromRecents)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,logViewLevelFilter,enableShizukuClipboard,clipboardCheckIntervalSeconds,serverContentCheckIntervalSeconds,enableBackgroundAutoSyncLog,ignoredVersion);
+int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,logViewLevelFilter,enableShizukuClipboard,clipboardCheckIntervalSeconds,serverContentCheckIntervalSeconds,enableBackgroundAutoSyncLog,excludeFromRecents,ignoredVersion);
 
 @override
 String toString() {
-  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, logViewLevelFilter: $logViewLevelFilter, enableShizukuClipboard: $enableShizukuClipboard, clipboardCheckIntervalSeconds: $clipboardCheckIntervalSeconds, serverContentCheckIntervalSeconds: $serverContentCheckIntervalSeconds, enableBackgroundAutoSyncLog: $enableBackgroundAutoSyncLog, ignoredVersion: $ignoredVersion)';
+  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, logViewLevelFilter: $logViewLevelFilter, enableShizukuClipboard: $enableShizukuClipboard, clipboardCheckIntervalSeconds: $clipboardCheckIntervalSeconds, serverContentCheckIntervalSeconds: $serverContentCheckIntervalSeconds, enableBackgroundAutoSyncLog: $enableBackgroundAutoSyncLog, excludeFromRecents: $excludeFromRecents, ignoredVersion: $ignoredVersion)';
 }
 
 
@@ -64,7 +65,7 @@ abstract mixin class $AppSettingsCopyWith<$Res>  {
   factory $AppSettingsCopyWith(AppSettings value, $Res Function(AppSettings) _then) = _$AppSettingsCopyWithImpl;
 @useResult
 $Res call({
- bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, String logViewLevelFilter, bool enableShizukuClipboard, double clipboardCheckIntervalSeconds, double serverContentCheckIntervalSeconds, bool enableBackgroundAutoSyncLog, String? ignoredVersion
+ bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, String logViewLevelFilter, bool enableShizukuClipboard, double clipboardCheckIntervalSeconds, double serverContentCheckIntervalSeconds, bool enableBackgroundAutoSyncLog, bool excludeFromRecents, String? ignoredVersion
 });
 
 
@@ -81,7 +82,7 @@ class _$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? logViewLevelFilter = null,Object? enableShizukuClipboard = null,Object? clipboardCheckIntervalSeconds = null,Object? serverContentCheckIntervalSeconds = null,Object? enableBackgroundAutoSyncLog = null,Object? ignoredVersion = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? logViewLevelFilter = null,Object? enableShizukuClipboard = null,Object? clipboardCheckIntervalSeconds = null,Object? serverContentCheckIntervalSeconds = null,Object? enableBackgroundAutoSyncLog = null,Object? excludeFromRecents = null,Object? ignoredVersion = freezed,}) {
   return _then(_self.copyWith(
 trustInsecureCert: null == trustInsecureCert ? _self.trustInsecureCert : trustInsecureCert // ignore: cast_nullable_to_non_nullable
 as bool,autoCheckUpdate: null == autoCheckUpdate ? _self.autoCheckUpdate : autoCheckUpdate // ignore: cast_nullable_to_non_nullable
@@ -92,6 +93,7 @@ as String,enableShizukuClipboard: null == enableShizukuClipboard ? _self.enableS
 as bool,clipboardCheckIntervalSeconds: null == clipboardCheckIntervalSeconds ? _self.clipboardCheckIntervalSeconds : clipboardCheckIntervalSeconds // ignore: cast_nullable_to_non_nullable
 as double,serverContentCheckIntervalSeconds: null == serverContentCheckIntervalSeconds ? _self.serverContentCheckIntervalSeconds : serverContentCheckIntervalSeconds // ignore: cast_nullable_to_non_nullable
 as double,enableBackgroundAutoSyncLog: null == enableBackgroundAutoSyncLog ? _self.enableBackgroundAutoSyncLog : enableBackgroundAutoSyncLog // ignore: cast_nullable_to_non_nullable
+as bool,excludeFromRecents: null == excludeFromRecents ? _self.excludeFromRecents : excludeFromRecents // ignore: cast_nullable_to_non_nullable
 as bool,ignoredVersion: freezed == ignoredVersion ? _self.ignoredVersion : ignoredVersion // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -178,10 +180,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  bool enableShizukuClipboard,  double clipboardCheckIntervalSeconds,  double serverContentCheckIntervalSeconds,  bool enableBackgroundAutoSyncLog,  String? ignoredVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  bool enableShizukuClipboard,  double clipboardCheckIntervalSeconds,  double serverContentCheckIntervalSeconds,  bool enableBackgroundAutoSyncLog,  bool excludeFromRecents,  String? ignoredVersion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.enableShizukuClipboard,_that.clipboardCheckIntervalSeconds,_that.serverContentCheckIntervalSeconds,_that.enableBackgroundAutoSyncLog,_that.ignoredVersion);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.enableShizukuClipboard,_that.clipboardCheckIntervalSeconds,_that.serverContentCheckIntervalSeconds,_that.enableBackgroundAutoSyncLog,_that.excludeFromRecents,_that.ignoredVersion);case _:
   return orElse();
 
 }
@@ -199,10 +201,10 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  bool enableShizukuClipboard,  double clipboardCheckIntervalSeconds,  double serverContentCheckIntervalSeconds,  bool enableBackgroundAutoSyncLog,  String? ignoredVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  bool enableShizukuClipboard,  double clipboardCheckIntervalSeconds,  double serverContentCheckIntervalSeconds,  bool enableBackgroundAutoSyncLog,  bool excludeFromRecents,  String? ignoredVersion)  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings():
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.enableShizukuClipboard,_that.clipboardCheckIntervalSeconds,_that.serverContentCheckIntervalSeconds,_that.enableBackgroundAutoSyncLog,_that.ignoredVersion);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.enableShizukuClipboard,_that.clipboardCheckIntervalSeconds,_that.serverContentCheckIntervalSeconds,_that.enableBackgroundAutoSyncLog,_that.excludeFromRecents,_that.ignoredVersion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -219,10 +221,10 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  bool enableShizukuClipboard,  double clipboardCheckIntervalSeconds,  double serverContentCheckIntervalSeconds,  bool enableBackgroundAutoSyncLog,  String? ignoredVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  bool enableShizukuClipboard,  double clipboardCheckIntervalSeconds,  double serverContentCheckIntervalSeconds,  bool enableBackgroundAutoSyncLog,  bool excludeFromRecents,  String? ignoredVersion)?  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.enableShizukuClipboard,_that.clipboardCheckIntervalSeconds,_that.serverContentCheckIntervalSeconds,_that.enableBackgroundAutoSyncLog,_that.ignoredVersion);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.enableShizukuClipboard,_that.clipboardCheckIntervalSeconds,_that.serverContentCheckIntervalSeconds,_that.enableBackgroundAutoSyncLog,_that.excludeFromRecents,_that.ignoredVersion);case _:
   return null;
 
 }
@@ -234,7 +236,7 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 @JsonSerializable()
 
 class _AppSettings implements AppSettings {
-  const _AppSettings({this.trustInsecureCert = false, this.autoCheckUpdate = true, this.manualUploadDialogShown = false, this.downloadRelativePath = '', this.logViewLevelFilter = 'info', this.enableShizukuClipboard = false, this.clipboardCheckIntervalSeconds = 3.0, this.serverContentCheckIntervalSeconds = 3.0, this.enableBackgroundAutoSyncLog = false, this.ignoredVersion});
+  const _AppSettings({this.trustInsecureCert = false, this.autoCheckUpdate = true, this.manualUploadDialogShown = false, this.downloadRelativePath = '', this.logViewLevelFilter = 'info', this.enableShizukuClipboard = false, this.clipboardCheckIntervalSeconds = 3.0, this.serverContentCheckIntervalSeconds = 3.0, this.enableBackgroundAutoSyncLog = false, this.excludeFromRecents = false, this.ignoredVersion});
   factory _AppSettings.fromJson(Map<String, dynamic> json) => _$AppSettingsFromJson(json);
 
 /// 是否信任不安全的 HTTPS 证书
@@ -259,6 +261,8 @@ class _AppSettings implements AppSettings {
 @override@JsonKey() final  double serverContentCheckIntervalSeconds;
 /// 是否记录后台自动同步运行日志
 @override@JsonKey() final  bool enableBackgroundAutoSyncLog;
+/// 是否在 Android 最近任务列表中隐藏当前任务
+@override@JsonKey() final  bool excludeFromRecents;
 /// 被忽略的更新版本号
 /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
 /// 当有新版本发布时，会自动清除该设置
@@ -277,16 +281,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.enableShizukuClipboard, enableShizukuClipboard) || other.enableShizukuClipboard == enableShizukuClipboard)&&(identical(other.clipboardCheckIntervalSeconds, clipboardCheckIntervalSeconds) || other.clipboardCheckIntervalSeconds == clipboardCheckIntervalSeconds)&&(identical(other.serverContentCheckIntervalSeconds, serverContentCheckIntervalSeconds) || other.serverContentCheckIntervalSeconds == serverContentCheckIntervalSeconds)&&(identical(other.enableBackgroundAutoSyncLog, enableBackgroundAutoSyncLog) || other.enableBackgroundAutoSyncLog == enableBackgroundAutoSyncLog)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.enableShizukuClipboard, enableShizukuClipboard) || other.enableShizukuClipboard == enableShizukuClipboard)&&(identical(other.clipboardCheckIntervalSeconds, clipboardCheckIntervalSeconds) || other.clipboardCheckIntervalSeconds == clipboardCheckIntervalSeconds)&&(identical(other.serverContentCheckIntervalSeconds, serverContentCheckIntervalSeconds) || other.serverContentCheckIntervalSeconds == serverContentCheckIntervalSeconds)&&(identical(other.enableBackgroundAutoSyncLog, enableBackgroundAutoSyncLog) || other.enableBackgroundAutoSyncLog == enableBackgroundAutoSyncLog)&&(identical(other.excludeFromRecents, excludeFromRecents) || other.excludeFromRecents == excludeFromRecents)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,logViewLevelFilter,enableShizukuClipboard,clipboardCheckIntervalSeconds,serverContentCheckIntervalSeconds,enableBackgroundAutoSyncLog,ignoredVersion);
+int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,logViewLevelFilter,enableShizukuClipboard,clipboardCheckIntervalSeconds,serverContentCheckIntervalSeconds,enableBackgroundAutoSyncLog,excludeFromRecents,ignoredVersion);
 
 @override
 String toString() {
-  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, logViewLevelFilter: $logViewLevelFilter, enableShizukuClipboard: $enableShizukuClipboard, clipboardCheckIntervalSeconds: $clipboardCheckIntervalSeconds, serverContentCheckIntervalSeconds: $serverContentCheckIntervalSeconds, enableBackgroundAutoSyncLog: $enableBackgroundAutoSyncLog, ignoredVersion: $ignoredVersion)';
+  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, logViewLevelFilter: $logViewLevelFilter, enableShizukuClipboard: $enableShizukuClipboard, clipboardCheckIntervalSeconds: $clipboardCheckIntervalSeconds, serverContentCheckIntervalSeconds: $serverContentCheckIntervalSeconds, enableBackgroundAutoSyncLog: $enableBackgroundAutoSyncLog, excludeFromRecents: $excludeFromRecents, ignoredVersion: $ignoredVersion)';
 }
 
 
@@ -297,7 +301,7 @@ abstract mixin class _$AppSettingsCopyWith<$Res> implements $AppSettingsCopyWith
   factory _$AppSettingsCopyWith(_AppSettings value, $Res Function(_AppSettings) _then) = __$AppSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, String logViewLevelFilter, bool enableShizukuClipboard, double clipboardCheckIntervalSeconds, double serverContentCheckIntervalSeconds, bool enableBackgroundAutoSyncLog, String? ignoredVersion
+ bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, String logViewLevelFilter, bool enableShizukuClipboard, double clipboardCheckIntervalSeconds, double serverContentCheckIntervalSeconds, bool enableBackgroundAutoSyncLog, bool excludeFromRecents, String? ignoredVersion
 });
 
 
@@ -314,7 +318,7 @@ class __$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? logViewLevelFilter = null,Object? enableShizukuClipboard = null,Object? clipboardCheckIntervalSeconds = null,Object? serverContentCheckIntervalSeconds = null,Object? enableBackgroundAutoSyncLog = null,Object? ignoredVersion = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? logViewLevelFilter = null,Object? enableShizukuClipboard = null,Object? clipboardCheckIntervalSeconds = null,Object? serverContentCheckIntervalSeconds = null,Object? enableBackgroundAutoSyncLog = null,Object? excludeFromRecents = null,Object? ignoredVersion = freezed,}) {
   return _then(_AppSettings(
 trustInsecureCert: null == trustInsecureCert ? _self.trustInsecureCert : trustInsecureCert // ignore: cast_nullable_to_non_nullable
 as bool,autoCheckUpdate: null == autoCheckUpdate ? _self.autoCheckUpdate : autoCheckUpdate // ignore: cast_nullable_to_non_nullable
@@ -325,6 +329,7 @@ as String,enableShizukuClipboard: null == enableShizukuClipboard ? _self.enableS
 as bool,clipboardCheckIntervalSeconds: null == clipboardCheckIntervalSeconds ? _self.clipboardCheckIntervalSeconds : clipboardCheckIntervalSeconds // ignore: cast_nullable_to_non_nullable
 as double,serverContentCheckIntervalSeconds: null == serverContentCheckIntervalSeconds ? _self.serverContentCheckIntervalSeconds : serverContentCheckIntervalSeconds // ignore: cast_nullable_to_non_nullable
 as double,enableBackgroundAutoSyncLog: null == enableBackgroundAutoSyncLog ? _self.enableBackgroundAutoSyncLog : enableBackgroundAutoSyncLog // ignore: cast_nullable_to_non_nullable
+as bool,excludeFromRecents: null == excludeFromRecents ? _self.excludeFromRecents : excludeFromRecents // ignore: cast_nullable_to_non_nullable
 as bool,ignoredVersion: freezed == ignoredVersion ? _self.ignoredVersion : ignoredVersion // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

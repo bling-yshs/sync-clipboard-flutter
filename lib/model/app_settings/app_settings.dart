@@ -46,6 +46,9 @@ abstract class AppSettings with _$AppSettings {
     /// 是否记录后台自动同步运行日志
     @Default(false) bool enableBackgroundAutoSyncLog,
 
+    /// 是否在 Android 最近任务列表中隐藏当前任务
+    @Default(false) bool excludeFromRecents,
+
     /// 被忽略的更新版本号
     /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
     /// 当有新版本发布时，会自动清除该设置

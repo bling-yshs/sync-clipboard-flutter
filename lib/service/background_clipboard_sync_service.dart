@@ -70,8 +70,7 @@ class BackgroundClipboardSyncService {
                 settings.clipboardCheckIntervalSeconds,
             'serverContentCheckIntervalSeconds':
                 settings.serverContentCheckIntervalSeconds,
-            'enableBackgroundAutoSyncLog':
-                settings.enableBackgroundAutoSyncLog,
+            'enableBackgroundAutoSyncLog': settings.enableBackgroundAutoSyncLog,
           }) ??
           false;
     } catch (e) {
@@ -111,16 +110,19 @@ class BackgroundClipboardSyncService {
     }
   }
 
-  /// 将当前任务从 Android 最近任务列表中隐藏。
-  static Future<bool> hideFromRecents() async {
+  /// 设置当前任务是否从 Android 最近任务列表中隐藏。
+  static Future<bool> setExcludeFromRecents(bool value) async {
     if (!Platform.isAndroid) {
       return false;
     }
 
     try {
-      return await _channel.invokeMethod<bool>('hideFromRecents') ?? false;
+      return await _channel.invokeMethod<bool>('setExcludeFromRecents', {
+            'exclude': value,
+          }) ??
+          false;
     } catch (e) {
-      AppLogger.logger.w('隐藏最近任务列表失败', error: e);
+      AppLogger.logger.w('设置最近任务列表隐藏状态失败', error: e);
       return false;
     }
   }

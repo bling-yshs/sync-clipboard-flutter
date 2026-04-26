@@ -19,6 +19,7 @@ _AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) => _AppSettings(
       (json['serverContentCheckIntervalSeconds'] as num?)?.toDouble() ?? 3.0,
   enableBackgroundAutoSyncLog:
       json['enableBackgroundAutoSyncLog'] as bool? ?? false,
+  excludeFromRecents: json['excludeFromRecents'] as bool? ?? false,
   ignoredVersion: json['ignoredVersion'] as String?,
 );
 
@@ -34,5 +35,6 @@ Map<String, dynamic> _$AppSettingsToJson(_AppSettings instance) =>
       'serverContentCheckIntervalSeconds':
           instance.serverContentCheckIntervalSeconds,
       'enableBackgroundAutoSyncLog': instance.enableBackgroundAutoSyncLog,
+      'excludeFromRecents': instance.excludeFromRecents,
       'ignoredVersion': instance.ignoredVersion,
     };
