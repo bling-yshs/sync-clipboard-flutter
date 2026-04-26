@@ -44,6 +44,7 @@ class BackgroundClipboardSyncService : Service() {
         private const val CHANNEL_ID = "background_clipboard_sync"
         private const val NOTIFICATION_ID = 1327
         private const val DEFAULT_POLL_INTERVAL_MS = 3000L
+        private const val REMOTE_CLIPBOARD_TYPE_TEXT = "Text"
         private const val TEXT_TRANSFER_DATA_THRESHOLD = 10240
     }
 
@@ -257,7 +258,8 @@ class BackgroundClipboardSyncService : Service() {
                 "dataName=${remoteClipboard.dataName.orEmpty()}, " +
                 "textLength=${remoteClipboard.text.length}",
         )
-        if (remoteClipboard.type != "Text") {
+        if (!remoteClipboard.isText()) {
+            logInfo("服务器剪贴板不是文本类型，跳过后台下载：type=${remoteClipboard.type}")
             return
         }
         val remoteHash = remoteClipboard.hash ?: sha256Upper(remoteClipboard.text.toByteArray(Charsets.UTF_8))
@@ -313,7 +315,7 @@ class BackgroundClipboardSyncService : Service() {
     private fun uploadTextClipboard(text: String, hash: String) {
         val textBytes = text.toByteArray(Charsets.UTF_8)
         val payload = JSONObject()
-            .put("type", "Text")
+            .put("type", REMOTE_CLIPBOARD_TYPE_TEXT)
             .put("hash", hash)
             .put("hasData", text.length > TEXT_TRANSFER_DATA_THRESHOLD)
             .put("size", text.length)
@@ -517,7 +519,14 @@ class BackgroundClipboardSyncService : Service() {
         val text: String,
         val hasData: Boolean,
         val dataName: String?,
-    )
+    ) {
+        /**
+         * 判断远端剪贴板是否为文本类型。
+         */
+        fun isText(): Boolean {
+            return type.equals(REMOTE_CLIPBOARD_TYPE_TEXT, ignoreCase = true)
+        }
+    }
 
     /**
      * 本地剪贴板文本快照。
