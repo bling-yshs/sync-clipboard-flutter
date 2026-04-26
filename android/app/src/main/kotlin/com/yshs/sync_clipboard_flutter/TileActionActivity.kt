@@ -1,6 +1,7 @@
 package com.yshs.sync_clipboard_flutter
 
 import android.content.Intent
+import android.os.Build
 import android.net.Uri
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.TransparencyMode
@@ -46,7 +47,12 @@ class TileActionActivity : FlutterActivity() {
                 return "/share/text"
             } else {
                 // 文件分享（包括图片等任意类型）
-                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+                }
                 if (uri != null) {
                     sharedFileUri = uri
                     sharedFileName = getFileNameFromUri(uri)

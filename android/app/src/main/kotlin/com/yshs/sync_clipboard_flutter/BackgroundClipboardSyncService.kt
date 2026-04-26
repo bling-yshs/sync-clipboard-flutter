@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
@@ -123,11 +122,11 @@ class BackgroundClipboardSyncService : Service() {
                     if (!sleepQuietly(200L)) {
                         return@Thread
                     }
-                } catch (e: InterruptedException) {
+                } catch (_: InterruptedException) {
                     Thread.currentThread().interrupt()
                     return@Thread
                 } catch (e: Exception) {
-                    logError("后台剪贴板服务器检查循环异常", e)
+                    logError(e)
                     if (!sleepQuietly(1000L)) {
                         return@Thread
                     }
@@ -160,15 +159,11 @@ class BackgroundClipboardSyncService : Service() {
     /**
      * 写入 WARN 级别日志到系统日志和应用日志文件。
      */
-    private fun logWarn(message: String) {
-        Log.w(TAG, message)
-        writeAppLog("WARN", message)
-    }
-
     /**
      * 写入 ERROR 级别日志到系统日志和应用日志文件。
      */
-    private fun logError(message: String, error: Throwable? = null) {
+    private fun logError(error: Throwable? = null) {
+        val message = "后台剪贴板服务器检查循环异常"
         Log.e(TAG, message, error)
         val suffix = error?.let { " | error: ${it.message ?: it.javaClass.name}" }.orEmpty()
         writeAppLog("ERROR", "$message$suffix")
@@ -290,7 +285,7 @@ class BackgroundClipboardSyncService : Service() {
      * 将服务器文本内容写入 Android 系统剪贴板。
      */
     private fun writeSystemClipboardText(text: String) {
-        val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipboardManager = getSystemService(ClipboardManager::class.java)
         clipboardManager.setPrimaryClip(ClipData.newPlainText("SyncClipboard", text))
     }
 
@@ -445,6 +440,7 @@ class BackgroundClipboardSyncService : Service() {
             Notification.Builder(this)
         }
 
+        @Suppress("DiscouragedApi")
         val iconId = resources.getIdentifier("ic_launcher_foreground", "drawable", packageName)
             .takeIf { it != 0 } ?: android.R.drawable.stat_notify_sync
 
@@ -461,6 +457,7 @@ class BackgroundClipboardSyncService : Service() {
      */
     private fun insecureSslContext(): SSLContext {
         val trustManagers = arrayOf<TrustManager>(
+            @Suppress("CustomX509TrustManager")
             object : X509TrustManager {
                 /**
                  * 跳过客户端证书校验。

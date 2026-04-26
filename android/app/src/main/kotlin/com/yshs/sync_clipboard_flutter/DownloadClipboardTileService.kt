@@ -75,6 +75,7 @@ class DownloadClipboardTileService : TileService() {
             // 旧版本：使用 Intent 版本，必须加 FLAG_ACTIVITY_NEW_TASK
             // （从 Service 启动 Activity 的要求）
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            @Suppress("DEPRECATION", "StartActivityAndCollapseDeprecated")
             startActivityAndCollapse(intent)
             Log.d(TAG, "Started activity with Intent + NEW_TASK flag")
         }

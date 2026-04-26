@@ -2,6 +2,7 @@ package com.yshs.sync_clipboard_flutter
 
 import android.content.ClipData
 import android.content.ClipDescription
+import kotlin.system.exitProcess
 import android.os.IBinder
 
 /**
@@ -132,7 +133,7 @@ class ClipboardUserService : IClipboardUserService.Stub() {
         try {
             callerToken.linkToDeath({
                 android.util.Log.i(TAG, "Caller process died, exiting UserService")
-                System.exit(0)
+                exitProcess(0)
             }, 0)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Failed to link caller token death", e)
@@ -145,6 +146,6 @@ class ClipboardUserService : IClipboardUserService.Stub() {
     override fun destroy() {
         android.util.Log.i(TAG, "UserService destroy called")
         clipboardService = null
-        System.exit(0)
+        exitProcess(0)
     }
 }

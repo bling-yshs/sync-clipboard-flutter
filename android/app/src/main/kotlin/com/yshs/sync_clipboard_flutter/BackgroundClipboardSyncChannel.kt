@@ -4,7 +4,7 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
@@ -108,7 +108,7 @@ object BackgroundClipboardSyncChannel {
             val intent = Intent(action).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 if (action == Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS) {
-                    data = Uri.parse("package:${appContext.packageName}")
+                    data = "package:${appContext.packageName}".toUri()
                 }
             }
             appContext.startActivity(intent)
@@ -117,7 +117,7 @@ object BackgroundClipboardSyncChannel {
             try {
                 val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    data = Uri.parse("package:${context.applicationContext.packageName}")
+                    data = "package:${context.applicationContext.packageName}".toUri()
                 }
                 context.applicationContext.startActivity(intent)
                 true
