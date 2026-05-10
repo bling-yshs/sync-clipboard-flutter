@@ -52,27 +52,10 @@ object BackgroundClipboardSyncChannel {
      * 启动后台剪贴板同步前台服务。
      */
     private fun startService(context: Context, args: Map<*, *>): Boolean {
+        val config = BackgroundSyncConfig.fromArgs(args) ?: return false
         val intent = Intent(context, BackgroundClipboardSyncService::class.java).apply {
             action = BackgroundClipboardSyncService.ACTION_START
-            putExtra(BackgroundClipboardSyncService.EXTRA_URL, args["url"] as? String ?: "")
-            putExtra(BackgroundClipboardSyncService.EXTRA_USERNAME, args["username"] as? String ?: "")
-            putExtra(BackgroundClipboardSyncService.EXTRA_PASSWORD, args["password"] as? String ?: "")
-            putExtra(
-                BackgroundClipboardSyncService.EXTRA_TRUST_INSECURE_CERT,
-                args["trustInsecureCert"] as? Boolean ?: false,
-            )
-            putExtra(
-                BackgroundClipboardSyncService.EXTRA_CLIPBOARD_CHECK_INTERVAL_MS,
-                secondsToMillis(args["clipboardCheckIntervalSeconds"]),
-            )
-            putExtra(
-                BackgroundClipboardSyncService.EXTRA_SERVER_CONTENT_CHECK_INTERVAL_MS,
-                secondsToMillis(args["serverContentCheckIntervalSeconds"]),
-            )
-            putExtra(
-                BackgroundClipboardSyncService.EXTRA_ENABLE_LOGGING,
-                args["enableBackgroundAutoSyncLog"] as? Boolean ?: false,
-            )
+            config.writeToIntent(this)
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -143,17 +126,4 @@ object BackgroundClipboardSyncChannel {
         }
     }
 
-    /**
-     * 将 Dart 传入的秒级小数转换成毫秒间隔。
-     */
-    private fun secondsToMillis(value: Any?): Long {
-        val seconds = when (value) {
-            is Double -> value
-            is Float -> value.toDouble()
-            is Int -> value.toDouble()
-            is Long -> value.toDouble()
-            else -> 3.0
-        }
-        return (seconds.coerceAtLeast(0.2) * 1000).toLong()
-    }
 }

@@ -18,6 +18,7 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
@@ -43,18 +44,17 @@ class BackgroundClipboardSyncService : Service() {
         private const val TAG = "BackgroundClipboardSync"
         private const val CHANNEL_ID = "background_clipboard_sync"
         private const val NOTIFICATION_ID = 1327
-        private const val DEFAULT_POLL_INTERVAL_MS = 3000L
         private const val REMOTE_CLIPBOARD_TYPE_TEXT = "Text"
         private const val TEXT_TRANSFER_DATA_THRESHOLD = 10240
     }
 
     private var workerThread: Thread? = null
-    private var running = false
+    private val running = AtomicBoolean(false)
     private var lastUploadedHash: String? = null
     private var lastRemoteHash: String? = null
     private var lastClipboardCheckAt = 0L
     private var lastServerCheckAt = 0L
-    private var config = SyncConfig()
+    private var config: BackgroundSyncConfig? = null
 
     /**
      * 接收服务启动和停止命令。
@@ -67,25 +67,18 @@ class BackgroundClipboardSyncService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_START -> {
-                config = SyncConfig(
-                    url = intent.getStringExtra(EXTRA_URL).orEmpty(),
-                    username = intent.getStringExtra(EXTRA_USERNAME).orEmpty(),
-                    password = intent.getStringExtra(EXTRA_PASSWORD).orEmpty(),
-                    trustInsecureCert = intent.getBooleanExtra(EXTRA_TRUST_INSECURE_CERT, false),
-                    clipboardCheckIntervalMs = intent.getLongExtra(
-                        EXTRA_CLIPBOARD_CHECK_INTERVAL_MS,
-                        DEFAULT_POLL_INTERVAL_MS,
-                    ).coerceAtLeast(200L),
-                    serverContentCheckIntervalMs = intent.getLongExtra(
-                        EXTRA_SERVER_CONTENT_CHECK_INTERVAL_MS,
-                        DEFAULT_POLL_INTERVAL_MS,
-                    ).coerceAtLeast(200L),
-                    enableLogging = intent.getBooleanExtra(EXTRA_ENABLE_LOGGING, false),
-                )
+                val startConfig = BackgroundSyncConfig.fromIntent(intent)
+                if (startConfig == null) {
+                    Log.w(TAG, "后台剪贴板同步启动失败：缺少服务器配置")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+
+                config = startConfig
                 startForeground(NOTIFICATION_ID, buildNotification())
-                logInfo("后台剪贴板服务器检查启动，检查间隔=${config.serverContentCheckIntervalMs}ms")
+                logInfo("后台剪贴板服务器检查启动，检查间隔=${startConfig.serverContentCheckIntervalMs}ms")
                 startSync()
-                return START_STICKY
+                return START_NOT_STICKY
             }
         }
 
@@ -111,13 +104,12 @@ class BackgroundClipboardSyncService : Service() {
      * 启动后台轮询线程。
      */
     private fun startSync() {
-        if (running) {
+        if (!running.compareAndSet(false, true)) {
             return
         }
 
-        running = true
         workerThread = Thread {
-            while (running) {
+            while (running.get()) {
                 try {
                     syncOnce()
                     if (!sleepQuietly(200L)) {
@@ -144,7 +136,7 @@ class BackgroundClipboardSyncService : Service() {
      */
     private fun stopSync() {
         logInfo("后台剪贴板服务器检查停止")
-        running = false
+        running.set(false)
         workerThread?.interrupt()
         workerThread = null
     }
@@ -174,7 +166,7 @@ class BackgroundClipboardSyncService : Service() {
      * 将原生后台服务日志追加到 Flutter 日志页读取的同一个文件。
      */
     private fun writeAppLog(level: String, message: String) {
-        if (!config.enableLogging) {
+        if (config?.enableLogging != true) {
             return
         }
 
@@ -209,16 +201,14 @@ class BackgroundClipboardSyncService : Service() {
      * 按独立间隔执行本地剪贴板和服务器内容检查。
      */
     private fun syncOnce() {
-        if (!config.isValid) {
-            return
-        }
+        val currentConfig = config ?: return
 
         val now = System.currentTimeMillis()
-        if (now - lastClipboardCheckAt >= config.clipboardCheckIntervalMs) {
+        if (now - lastClipboardCheckAt >= currentConfig.clipboardCheckIntervalMs) {
             lastClipboardCheckAt = now
             syncClipboardOnce()
         }
-        if (now - lastServerCheckAt >= config.serverContentCheckIntervalMs) {
+        if (now - lastServerCheckAt >= currentConfig.serverContentCheckIntervalMs) {
             lastServerCheckAt = now
             syncServerContentOnce()
         }
@@ -340,13 +330,14 @@ class BackgroundClipboardSyncService : Service() {
      * 通过 HTTP PUT 上传二进制内容。
      */
     private fun putBytes(path: String, bytes: ByteArray, contentType: String) {
-        val connection = openConnection(path)
+        val authorization = buildBasicAuthHeader() ?: return
+        val connection = openConnection(path) ?: return
         try {
             connection.requestMethod = "PUT"
             connection.doOutput = true
             connection.setRequestProperty("Content-Type", contentType)
             connection.setRequestProperty("Content-Length", bytes.size.toString())
-            connection.setRequestProperty("Authorization", buildBasicAuthHeader())
+            connection.setRequestProperty("Authorization", authorization)
             connection.outputStream.use { output ->
                 output.write(bytes)
             }
@@ -383,10 +374,11 @@ class BackgroundClipboardSyncService : Service() {
      * 通过 HTTP GET 读取文本内容。
      */
     private fun getString(path: String): String {
-        val connection = openConnection(path)
+        val authorization = buildBasicAuthHeader() ?: return ""
+        val connection = openConnection(path) ?: return ""
         try {
             connection.requestMethod = "GET"
-            connection.setRequestProperty("Authorization", buildBasicAuthHeader())
+            connection.setRequestProperty("Authorization", authorization)
             val statusCode = connection.responseCode
             if (statusCode != 200) {
                 throw IllegalStateException("Download failed: HTTP $statusCode")
@@ -400,12 +392,13 @@ class BackgroundClipboardSyncService : Service() {
     /**
      * 打开服务端连接并应用证书策略。
      */
-    private fun openConnection(path: String): HttpURLConnection {
-        val connection = URL("${config.normalizedUrl}$path").openConnection() as HttpURLConnection
+    private fun openConnection(path: String): HttpURLConnection? {
+        val currentConfig = config ?: return null
+        val connection = URL("${currentConfig.normalizedUrl}$path").openConnection() as HttpURLConnection
         connection.connectTimeout = 5000
         connection.readTimeout = 30000
 
-        if (connection is HttpsURLConnection && config.trustInsecureCert) {
+        if (connection is HttpsURLConnection && currentConfig.trustInsecureCert) {
             connection.sslSocketFactory = insecureSslContext().socketFactory
             connection.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
         }
@@ -416,8 +409,9 @@ class BackgroundClipboardSyncService : Service() {
     /**
      * 构建 HTTP Basic Auth 请求头。
      */
-    private fun buildBasicAuthHeader(): String {
-        val raw = "${config.username}:${config.password}"
+    private fun buildBasicAuthHeader(): String? {
+        val currentConfig = config ?: return null
+        val raw = "${currentConfig.username}:${currentConfig.password}"
         return "Basic ${Base64.encodeToString(raw.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)}"
     }
 
@@ -489,25 +483,6 @@ class BackgroundClipboardSyncService : Service() {
         return MessageDigest.getInstance("SHA-256")
             .digest(bytes)
             .joinToString("") { "%02X".format(it) }
-    }
-
-    /**
-     * 后台同步所需的服务器配置。
-     */
-    private data class SyncConfig(
-        val url: String = "",
-        val username: String = "",
-        val password: String = "",
-        val trustInsecureCert: Boolean = false,
-        val clipboardCheckIntervalMs: Long = DEFAULT_POLL_INTERVAL_MS,
-        val serverContentCheckIntervalMs: Long = DEFAULT_POLL_INTERVAL_MS,
-        val enableLogging: Boolean = false,
-    ) {
-        val normalizedUrl: String
-            get() = url.trim().let { if (it.endsWith("/")) it else "$it/" }
-
-        val isValid: Boolean
-            get() = url.isNotBlank()
     }
 
     /**
