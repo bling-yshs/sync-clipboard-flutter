@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -121,12 +123,14 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
   }
 
   Future<void> _uploadSharedFile() async {
+    final stopwatch = Stopwatch()..start();
+    int? sharedFd;
+    var shouldClosePage = false;
     try {
       _log.i('开始获取分享的文件...');
 
       // 从 Android 获取分享的文件
       final result = await _shareChannel.invokeMethod<Map>('getSharedFile');
-
       if (result == null) {
         setState(() {
           _message = '没有收到分享的文件';
@@ -137,35 +141,23 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
       }
 
       final filename = result['filename'] as String;
-      final bytes = result['bytes'] as Uint8List;
+      final fdPath = result['path'] as String;
+      sharedFd = result['fd'] as int;
 
-      _log.d('收到分享文件: $filename, 大小: ${bytes.length} bytes');
+      if (fdPath.isEmpty) {
+        throw StateError('分享文件 fd 路径为空');
+      }
+
+      final file = File(fdPath);
+      _log.d('收到分享文件 fd: $filename, 获取耗时: ${stopwatch.elapsedMilliseconds}ms');
 
       setState(() {
-        _message = '正在上传: $filename';
+        _message = '正在准备: $filename';
         _showProgress = true;
       });
 
-      // 上传文件
-      final client = await SyncClipboardClient.create();
-      _log.i('开始上传文件到服务器: ${client.config.url}');
-
-      await client.putSyncClipboardFile(
-        filename,
-        bytes,
-        onSendProgress: (sent, total) {
-          if (total != -1) {
-            setState(() {
-              _uploadProgress = sent / total;
-              _message =
-                  '正在上传：${(sent / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
-            });
-          }
-        },
-      );
-
       // 根据文件扩展名判断类型
-      final ext = p.extension(filename).toLowerCase(); // 返回 .jpg 格式
+      final ext = p.extension(filename).toLowerCase();
       const imageExtensions = [
         '.jpg',
         '.jpeg',
@@ -182,20 +174,69 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
           : clipboard_model.ClipboardType.file;
       _log.d('文件类型: ${clipboardType.name}');
 
-      // 更新 SyncClipboard.json
-      final clipboard = buildFileClipboard(
+      // 流式构建 SyncClipboard.json 内容
+      _log.d('开始构建分享文件剪贴板元数据');
+      final measuredPayload = await buildFileClipboardFromStream(
         filename: filename,
-        bytes: bytes,
+        stream: file.openRead(),
         type: clipboardType,
       );
-      await client.putSyncClipboardJson(clipboard);
+      final measuredSize = measuredPayload.size;
+      final measuredSizeMb = measuredSize / 1024 / 1024;
+      if (measuredSize <= 0) {
+        throw SyncClipboardException('分享文件实测大小为 0，无法上传');
+      }
+      _log.d(
+        '分享文件剪贴板元数据构建完成: filename=$filename, size=$measuredSize (${measuredSizeMb.toStringAsFixed(2)}MB), hash=${measuredPayload.clipboard.hash}',
+      );
 
-      _log.i('分享文件上传成功: $filename');
+      // 上传文件
+      final client = await SyncClipboardClient.create();
+      _log.i(
+        '开始上传文件到服务器: ${client.config.url}, Content-Length 使用 Dart 实测大小: $measuredSize, 距开始获取已耗时: ${stopwatch.elapsedMilliseconds}ms',
+      );
+
+      await client.putSyncClipboardFileStream(
+        filename,
+        file.openRead(),
+        contentLength: measuredSize,
+        onSendProgress: (sent, total) {
+          if (total != -1) {
+            setState(() {
+              _uploadProgress = sent / total;
+              _message =
+                  '正在上传：${(sent / 1024 / 1024).toStringAsFixed(1)}MB / ${(total / 1024 / 1024).toStringAsFixed(1)}MB';
+            });
+          }
+        },
+      );
+      _log.i('分享文件主体上传完成，耗时: ${stopwatch.elapsedMilliseconds}ms');
+
+      // 更新 SyncClipboard.json
+      await client.putSyncClipboardJson(measuredPayload.clipboard);
+
+      _log.i('分享文件上传成功: $filename, 总耗时: ${stopwatch.elapsedMilliseconds}ms');
 
       Fluttertoast.showToast(msg: '文件上传成功！\n$filename');
-      SystemNavigator.pop();
+      shouldClosePage = true;
+    } on PlatformException catch (e) {
+      _log.e(
+        '获取分享文件失败 - 平台通道异常，耗时: ${stopwatch.elapsedMilliseconds}ms, code: ${e.code}, message: ${e.message}, details: ${e.details}',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
+      setState(() {
+        _message = '上传失败：${e.message ?? e.code}';
+        _isUploading = false;
+        _hasError = true;
+        _showProgress = false;
+      });
     } on SyncClipboardException catch (e) {
-      _log.e('上传失败 - 业务异常', error: e, stackTrace: StackTrace.current);
+      _log.e(
+        '上传失败 - 业务异常，耗时: ${stopwatch.elapsedMilliseconds}ms',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
       setState(() {
         _message = '上传失败：${e.message}';
         _isUploading = false;
@@ -203,13 +244,35 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         _showProgress = false;
       });
     } catch (e) {
-      _log.e('上传失败 - 未知错误', error: e, stackTrace: StackTrace.current);
+      _log.e(
+        '上传失败 - 未知错误，耗时: ${stopwatch.elapsedMilliseconds}ms',
+        error: e,
+        stackTrace: StackTrace.current,
+      );
       setState(() {
         _message = '上传失败：$e';
         _isUploading = false;
         _hasError = true;
         _showProgress = false;
       });
+    } finally {
+      final fd = sharedFd;
+      if (fd != null) {
+        await _closeSharedFileDescriptor(fd);
+      }
+      if (shouldClosePage) {
+        await SystemNavigator.pop();
+      }
+    }
+  }
+
+  /// 请求 Android 关闭分享文件 fd。
+  Future<void> _closeSharedFileDescriptor(int fd) async {
+    try {
+      await _shareChannel.invokeMethod<bool>('closeSharedFileDescriptor', fd);
+      _log.d('分享文件 fd 已关闭: $fd');
+    } catch (e) {
+      _log.w('关闭分享文件 fd 失败: $fd', error: e);
     }
   }
 

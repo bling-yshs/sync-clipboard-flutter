@@ -2,6 +2,8 @@ package com.yshs.sync_clipboard_flutter
 
 import android.content.Intent
 import android.net.Uri
+import android.os.ParcelFileDescriptor
+import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.TransparencyMode
 import io.flutter.embedding.engine.FlutterEngine
@@ -29,6 +31,7 @@ class TileActionActivity : FlutterActivity() {
     private var sharedText: String? = null
     private var sharedFileUri: Uri? = null
     private var sharedFileName: String? = null
+    private val detachedFileDescriptors = mutableSetOf<Int>()
 
     override fun getTransparencyMode(): TransparencyMode {
         return TransparencyMode.transparent
@@ -77,15 +80,8 @@ class TileActionActivity : FlutterActivity() {
                 }
                 "getSharedFile" -> {
                     if (sharedFileUri != null) {
-                        // 读取文件内容并返回
                         try {
-                            val inputStream = contentResolver.openInputStream(sharedFileUri!!)
-                            val bytes = inputStream?.readBytes()
-                            inputStream?.close()
-                            result.success(mapOf(
-                                "filename" to (sharedFileName ?: "shared_file"),
-                                "bytes" to bytes
-                            ))
+                            result.success(buildSharedFileDescriptorResult(sharedFileUri!!))
                         } catch (e: Exception) {
                             result.error("READ_ERROR", "无法读取文件: ${e.message}", null)
                         }
@@ -93,17 +89,74 @@ class TileActionActivity : FlutterActivity() {
                         result.success(null)
                     }
                 }
+                "closeSharedFileDescriptor" -> {
+                    val fd = (call.arguments as? Number)?.toInt()
+                    if (fd == null) {
+                        result.error("INVALID_ARGS", "fd 为空", null)
+                    } else {
+                        result.success(closeDetachedFileDescriptor(fd))
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
     }
-    
+
+    /**
+     * Activity 销毁时兜底关闭尚未释放的分享文件 fd。
+     */
+    override fun onDestroy() {
+        val remainingFileDescriptors = detachedFileDescriptors.toList()
+        for (fd in remainingFileDescriptors) {
+            closeDetachedFileDescriptor(fd)
+        }
+        super.onDestroy()
+    }
+
+    /**
+     * 打开分享文件并返回 Dart 可读取的 /proc/self/fd 路径。
+     */
+    private fun buildSharedFileDescriptorResult(uri: Uri): Map<String, Any> {
+        val parcelFileDescriptor = contentResolver.openFileDescriptor(uri, "r")
+            ?: throw IllegalStateException("无法打开分享文件描述符")
+        return try {
+            val fd = parcelFileDescriptor.detachFd()
+            detachedFileDescriptors.add(fd)
+            mapOf(
+                "filename" to (sharedFileName ?: "shared_file"),
+                "path" to "/proc/self/fd/$fd",
+                "fd" to fd
+            )
+        } catch (e: Exception) {
+            parcelFileDescriptor.close()
+            throw e
+        }
+    }
+
+    /**
+     * 关闭已经 detach 给 Dart 使用的 native fd。
+     */
+    private fun closeDetachedFileDescriptor(fd: Int): Boolean {
+        if (!detachedFileDescriptors.remove(fd)) {
+            return false
+        }
+        return try {
+            ParcelFileDescriptor.adoptFd(fd).close()
+            true
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 从 content uri 获取展示文件名。
+     */
     private fun getFileNameFromUri(uri: Uri): String {
         var name = "shared_file"
         val cursor = contentResolver.query(uri, null, null, null, null)
         cursor?.use {
             if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (nameIndex >= 0) {
                     name = it.getString(nameIndex)
                 }
