@@ -2,7 +2,6 @@ package com.yshs.sync_clipboard_flutter
 
 import android.content.Intent
 import android.net.Uri
-import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.TransparencyMode
@@ -31,7 +30,6 @@ class TileActionActivity : FlutterActivity() {
     private var sharedText: String? = null
     private var sharedFileUri: Uri? = null
     private var sharedFileName: String? = null
-    private val detachedFileDescriptors = mutableSetOf<Int>()
 
     override fun getTransparencyMode(): TransparencyMode {
         return TransparencyMode.transparent
@@ -80,21 +78,9 @@ class TileActionActivity : FlutterActivity() {
                 }
                 "getSharedFile" -> {
                     if (sharedFileUri != null) {
-                        try {
-                            result.success(buildSharedFileDescriptorResult(sharedFileUri!!))
-                        } catch (e: Exception) {
-                            result.error("READ_ERROR", "无法读取文件: ${e.message}", null)
-                        }
+                        result.success(buildSharedFileResult(sharedFileUri!!))
                     } else {
                         result.success(null)
-                    }
-                }
-                "closeSharedFileDescriptor" -> {
-                    val fd = (call.arguments as? Number)?.toInt()
-                    if (fd == null) {
-                        result.error("INVALID_ARGS", "fd 为空", null)
-                    } else {
-                        result.success(closeDetachedFileDescriptor(fd))
                     }
                 }
                 else -> result.notImplemented()
@@ -103,49 +89,13 @@ class TileActionActivity : FlutterActivity() {
     }
 
     /**
-     * Activity 销毁时兜底关闭尚未释放的分享文件 fd。
+     * 返回分享文件的 uri 元数据。
      */
-    override fun onDestroy() {
-        val remainingFileDescriptors = detachedFileDescriptors.toList()
-        for (fd in remainingFileDescriptors) {
-            closeDetachedFileDescriptor(fd)
-        }
-        super.onDestroy()
-    }
-
-    /**
-     * 打开分享文件并返回 Dart 可读取的 /proc/self/fd 路径。
-     */
-    private fun buildSharedFileDescriptorResult(uri: Uri): Map<String, Any> {
-        val parcelFileDescriptor = contentResolver.openFileDescriptor(uri, "r")
-            ?: throw IllegalStateException("无法打开分享文件描述符")
-        return try {
-            val fd = parcelFileDescriptor.detachFd()
-            detachedFileDescriptors.add(fd)
-            mapOf(
-                "filename" to (sharedFileName ?: "shared_file"),
-                "path" to "/proc/self/fd/$fd",
-                "fd" to fd
-            )
-        } catch (e: Exception) {
-            parcelFileDescriptor.close()
-            throw e
-        }
-    }
-
-    /**
-     * 关闭已经 detach 给 Dart 使用的 native fd。
-     */
-    private fun closeDetachedFileDescriptor(fd: Int): Boolean {
-        if (!detachedFileDescriptors.remove(fd)) {
-            return false
-        }
-        return try {
-            ParcelFileDescriptor.adoptFd(fd).close()
-            true
-        } catch (_: Exception) {
-            false
-        }
+    private fun buildSharedFileResult(uri: Uri): Map<String, Any> {
+        return mapOf(
+            "filename" to (sharedFileName ?: "shared_file"),
+            "uri" to uri.toString()
+        )
     }
 
     /**

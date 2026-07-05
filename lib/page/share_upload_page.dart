@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -10,6 +8,7 @@ import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/utils/clipboard_utils.dart';
+import 'package:uri_content/uri_content.dart';
 
 /// MethodChannel 用于从 Android 获取分享数据
 const _shareChannel = MethodChannel('com.yshs.sync_clipboard_flutter/share');
@@ -124,7 +123,6 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
 
   Future<void> _uploadSharedFile() async {
     final stopwatch = Stopwatch()..start();
-    int? sharedFd;
     var shouldClosePage = false;
     try {
       _log.i('开始获取分享的文件...');
@@ -141,15 +139,17 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
       }
 
       final filename = result['filename'] as String;
-      final fdPath = result['path'] as String;
-      sharedFd = result['fd'] as int;
+      final uriText = result['uri'] as String;
 
-      if (fdPath.isEmpty) {
-        throw StateError('分享文件 fd 路径为空');
+      if (uriText.isEmpty) {
+        throw StateError('分享文件 uri 为空');
       }
 
-      final file = File(fdPath);
-      _log.d('收到分享文件 fd: $filename, 获取耗时: ${stopwatch.elapsedMilliseconds}ms');
+      final uri = Uri.parse(uriText);
+      final uriContent = UriContent();
+      _log.d(
+        '收到分享文件 uri: $filename, 获取耗时: ${stopwatch.elapsedMilliseconds}ms',
+      );
 
       setState(() {
         _message = '正在准备: $filename';
@@ -178,7 +178,7 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
       _log.d('开始构建分享文件剪贴板元数据');
       final measuredPayload = await buildFileClipboardFromStream(
         filename: filename,
-        stream: file.openRead(),
+        stream: uriContent.getContentStream(uri),
         type: clipboardType,
       );
       final measuredSize = measuredPayload.size;
@@ -198,7 +198,7 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
 
       await client.putSyncClipboardFileStream(
         filename,
-        file.openRead(),
+        uriContent.getContentStream(uri),
         contentLength: measuredSize,
         onSendProgress: (sent, total) {
           if (total != -1) {
@@ -256,23 +256,9 @@ class _ShareFileUploadPageState extends State<ShareFileUploadPage> {
         _showProgress = false;
       });
     } finally {
-      final fd = sharedFd;
-      if (fd != null) {
-        await _closeSharedFileDescriptor(fd);
-      }
       if (shouldClosePage) {
         await SystemNavigator.pop();
       }
-    }
-  }
-
-  /// 请求 Android 关闭分享文件 fd。
-  Future<void> _closeSharedFileDescriptor(int fd) async {
-    try {
-      await _shareChannel.invokeMethod<bool>('closeSharedFileDescriptor', fd);
-      _log.d('分享文件 fd 已关闭: $fd');
-    } catch (e) {
-      _log.w('关闭分享文件 fd 失败: $fd', error: e);
     }
   }
 
