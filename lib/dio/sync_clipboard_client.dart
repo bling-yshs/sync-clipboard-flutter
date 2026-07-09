@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
@@ -195,6 +196,57 @@ class SyncClipboardClient {
         options: Options(
           contentType: 'application/octet-stream',
           headers: {'Content-Length': fileBytes.length},
+        ),
+        onSendProgress: onSendProgress,
+      );
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
+        return true;
+      } else if (response.statusCode == 401) {
+        throw SyncClipboardException('认证失败：用户名或密码错误', statusCode: 401);
+      } else {
+        throw SyncClipboardException(
+          '上传失败：HTTP ${response.statusCode}',
+          statusCode: response.statusCode,
+        );
+      }
+    } on DioException catch (e) {
+      throw _handleDioException(e);
+    }
+  }
+
+  /// 以流式方式上传文件到服务器（WebDAV PUT）
+  ///
+  /// 参数：
+  /// - [filename] 要保存的文件名
+  /// - [fileStream] 文件字节流
+  /// - [contentLength] 文件总字节数
+  /// - [onSendProgress] 可选的上传进度回调
+  ///   - 参数1：已发送字节数
+  ///   - 参数2：总字节数
+  ///
+  /// 返回值：
+  /// - 成功时返回 true
+  /// - 失败时抛出异常
+  ///
+  /// 可能抛出的异常：
+  /// - [DioException] 网络请求异常
+  /// - [SyncClipboardException] 业务逻辑异常
+  Future<bool> putSyncClipboardFileStream(
+    String filename,
+    Stream<List<int>> fileStream, {
+    required int contentLength,
+    void Function(int sent, int total)? onSendProgress,
+  }) async {
+    try {
+      final response = await _dio.put(
+        'file/$filename',
+        data: fileStream,
+        options: Options(
+          contentType: 'application/octet-stream',
+          headers: {Headers.contentLengthHeader: contentLength},
         ),
         onSendProgress: onSendProgress,
       );

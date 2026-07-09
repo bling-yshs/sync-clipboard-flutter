@@ -3,9 +3,10 @@ name: 🛠️ Flutter 自动构建
 on:
   workflow_dispatch:
   push:
-  pull_request_target:
-    branches:
-      - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android:
@@ -81,11 +82,10 @@ jobs:
         run: flutter build apk --release --target-platform android-arm64
 
       - name: 上传构建产物 (Upload build artifacts)
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
-          name: android-${{ github.sha }}
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          archive: false
           if-no-files-found: error
 
   upload-to-release-alpha:
@@ -99,10 +99,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: 下载 Artifact (Download Artifact)
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
+          name: app-release.apk
           path: ./download
-          merge-multiple: true
 
       - name: 读取 Unreleased Changelog (Read Unreleased Changelog)
         id: changelog_reader
@@ -131,4 +131,4 @@ jobs:
           allowUpdates: true
           removeArtifacts: true
           prerelease: true
-          artifacts: ./download/**/*
+          artifacts: ./download/app-release.apk

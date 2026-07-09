@@ -3,6 +3,12 @@
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
 
+### Fixed
+
+- 修复通过分享到 app 的方式，上传大于 100 MB 文件，无法正常上传的问题 （修改了上传实现，可能引入新的 bug...）
+
+## [0.3.3] - 2026-04-14
+
 ### ⚠ 重要提醒
 - 0.3.0 以后版本，仅能与 SyncClipboard v3.1.1 及以上版本搭配使用
 
@@ -110,7 +116,8 @@
 
 - 第一次正式发布 sync-clipboard-tauri
 
-[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/bling-yshs/sync-clipboard-flutter/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.3
 [0.3.2]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.2
 [0.3.1]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.1
 [0.3.0]: https://github.com/bling-yshs/sync-clipboard-flutter/commits/v0.3.0

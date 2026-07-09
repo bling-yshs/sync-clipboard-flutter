@@ -2,6 +2,7 @@ package com.yshs.sync_clipboard_flutter
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.TransparencyMode
 import io.flutter.embedding.engine.FlutterEngine
@@ -77,18 +78,7 @@ class TileActionActivity : FlutterActivity() {
                 }
                 "getSharedFile" -> {
                     if (sharedFileUri != null) {
-                        // 读取文件内容并返回
-                        try {
-                            val inputStream = contentResolver.openInputStream(sharedFileUri!!)
-                            val bytes = inputStream?.readBytes()
-                            inputStream?.close()
-                            result.success(mapOf(
-                                "filename" to (sharedFileName ?: "shared_file"),
-                                "bytes" to bytes
-                            ))
-                        } catch (e: Exception) {
-                            result.error("READ_ERROR", "无法读取文件: ${e.message}", null)
-                        }
+                        result.success(buildSharedFileResult(sharedFileUri!!))
                     } else {
                         result.success(null)
                     }
@@ -97,13 +87,26 @@ class TileActionActivity : FlutterActivity() {
             }
         }
     }
-    
+
+    /**
+     * 返回分享文件的 uri 元数据。
+     */
+    private fun buildSharedFileResult(uri: Uri): Map<String, Any> {
+        return mapOf(
+            "filename" to (sharedFileName ?: "shared_file"),
+            "uri" to uri.toString()
+        )
+    }
+
+    /**
+     * 从 content uri 获取展示文件名。
+     */
     private fun getFileNameFromUri(uri: Uri): String {
         var name = "shared_file"
         val cursor = contentResolver.query(uri, null, null, null, null)
         cursor?.use {
             if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (nameIndex >= 0) {
                     name = it.getString(nameIndex)
                 }
