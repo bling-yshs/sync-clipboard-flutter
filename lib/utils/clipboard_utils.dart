@@ -35,6 +35,23 @@ class FileClipboardStreamPayload {
   });
 }
 
+/// Group 剪贴板中的单个文件条目。
+class GroupClipboardEntry {
+  final String name;
+  final int size;
+  final String contentHash;
+
+  /// 创建 Group 文件条目。
+  ///
+  /// [name] 是 ZIP 中的相对文件名，[size] 是原始字节数，
+  /// [contentHash] 是文件内容的 SHA-256。
+  const GroupClipboardEntry({
+    required this.name,
+    required this.size,
+    required this.contentHash,
+  });
+}
+
 ClipboardUploadPayload buildTextClipboardPayload(String text) {
   final textLength = text.length;
   final hash = computeTextHash(text);
@@ -89,10 +106,7 @@ Future<FileClipboardStreamPayload> buildFileClipboardFromStream({
   required Stream<List<int>> stream,
   required ClipboardType type,
 }) async {
-  final hashAndSize = await _computeFileHashAndSizeFromStream(
-    filename,
-    stream,
-  );
+  final hashAndSize = await _computeFileHashAndSizeFromStream(filename, stream);
   return FileClipboardStreamPayload(
     clipboard: Clipboard(
       type: type,
@@ -103,6 +117,36 @@ Future<FileClipboardStreamPayload> buildFileClipboardFromStream({
       size: hashAndSize.size,
     ),
     size: hashAndSize.size,
+  );
+}
+
+/// 根据平铺文件条目构建 Group 剪贴板元数据。
+///
+/// [entries] 中的名称必须与 ZIP 条目名一致。
+/// 返回符合 SyncClipboard Group Hash 协议的剪贴板对象。
+Clipboard buildGroupClipboard(List<GroupClipboardEntry> entries) {
+  if (entries.isEmpty) {
+    throw ArgumentError.value(entries, 'entries', 'Group 文件列表不能为空');
+  }
+
+  final sortedEntries = List<GroupClipboardEntry>.of(entries)
+    ..sort((a, b) => _compareByUtf8Bytes(a.name, b.name));
+  final hashInput = StringBuffer();
+  var totalSize = 0;
+  for (final entry in sortedEntries) {
+    final contentHash = entry.contentHash.trim().toUpperCase();
+    hashInput.write('F|${entry.name}|${entry.size}|$contentHash\x00');
+    totalSize += entry.size;
+  }
+  final hash = _sha256Upper(utf8.encode(hashInput.toString()));
+
+  return Clipboard(
+    type: ClipboardType.group,
+    hash: hash,
+    text: entries.map((entry) => entry.name).join('\n'),
+    hasData: true,
+    dataName: 'group_$hash.zip',
+    size: totalSize,
   );
 }
 
@@ -122,10 +166,7 @@ Future<String> computeFileHashFromStream(
   String filename,
   Stream<List<int>> stream,
 ) async {
-  final hashAndSize = await _computeFileHashAndSizeFromStream(
-    filename,
-    stream,
-  );
+  final hashAndSize = await _computeFileHashAndSizeFromStream(filename, stream);
   return hashAndSize.hash;
 }
 
@@ -271,8 +312,5 @@ class _FileHashStreamResult {
   final int size;
 
   /// 创建流式文件 hash 与字节数计算结果。
-  const _FileHashStreamResult({
-    required this.hash,
-    required this.size,
-  });
+  const _FileHashStreamResult({required this.hash, required this.size});
 }
