@@ -51,19 +51,19 @@ class TileActionActivity : FlutterActivity() {
             }
         }
 
-        // 处理分享 Intent
-        if (Intent.ACTION_SEND == action && type != null) {
-            if (type.startsWith("text/")) {
-                // 文本分享
+        // 处理单项分享。文件管理器可能把 XML、JSON 等文件声明成 text/*，
+        // 因此必须优先根据 EXTRA_STREAM 判断“文件分享”，不能只依赖 MIME 类型。
+        if (Intent.ACTION_SEND == action) {
+            val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            if (uri != null) {
+                sharedFileUris = listOf(uri)
+                return "/share/file"
+            }
+
+            if (type?.startsWith("text/") == true) {
+                // 只有没有文件流时，才把 text/* 当作纯文本分享。
                 sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
                 return "/share/text"
-            } else {
-                // 文件分享（包括图片等任意类型）
-                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                if (uri != null) {
-                    sharedFileUris = listOf(uri)
-                    return "/share/file"
-                }
             }
         }
         
