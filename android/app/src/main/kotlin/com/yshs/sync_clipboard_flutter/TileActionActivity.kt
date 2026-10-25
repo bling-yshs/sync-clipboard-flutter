@@ -28,31 +28,42 @@ class TileActionActivity : FlutterActivity() {
     
     // 保存分享数据
     private var sharedText: String? = null
-    private var sharedFileUri: Uri? = null
-    private var sharedFileName: String? = null
+    private var sharedFileUris: List<Uri> = emptyList()
 
     override fun getTransparencyMode(): TransparencyMode {
         return TransparencyMode.transparent
     }
 
+    /**
+     * 根据磁贴或分享 Intent 返回 Flutter 初始路由。
+     *
+     * @return Flutter 页面路由。
+     */
     override fun getInitialRoute(): String {
         val action = intent.action
         val type = intent.type
-        
-        // 处理分享 Intent
-        if (Intent.ACTION_SEND == action && type != null) {
-            if (type.startsWith("text/")) {
-                // 文本分享
+
+        if (Intent.ACTION_SEND_MULTIPLE == action) {
+            val uris = intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM).orEmpty()
+            if (uris.isNotEmpty()) {
+                sharedFileUris = uris
+                return "/share/file"
+            }
+        }
+
+        // 处理单项分享。文件管理器可能把 XML、JSON 等文件声明成 text/*，
+        // 因此必须优先根据 EXTRA_STREAM 判断“文件分享”，不能只依赖 MIME 类型。
+        if (Intent.ACTION_SEND == action) {
+            val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+            if (uri != null) {
+                sharedFileUris = listOf(uri)
+                return "/share/file"
+            }
+
+            if (type?.startsWith("text/") == true) {
+                // 只有没有文件流时，才把 text/* 当作纯文本分享。
                 sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
                 return "/share/text"
-            } else {
-                // 文件分享（包括图片等任意类型）
-                val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-                if (uri != null) {
-                    sharedFileUri = uri
-                    sharedFileName = getFileNameFromUri(uri)
-                    return "/share/file"
-                }
             }
         }
         
@@ -64,7 +75,12 @@ class TileActionActivity : FlutterActivity() {
             else -> "/"
         }
     }
-    
+
+    /**
+     * 注册分享数据、下载保存和 Wi-Fi 信息平台通道。
+     *
+     * @param flutterEngine 当前 Activity 使用的 Flutter 引擎。
+     */
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         DownloadsSaveChannel.register(flutterEngine, this)
@@ -76,12 +92,8 @@ class TileActionActivity : FlutterActivity() {
                 "getSharedText" -> {
                     result.success(sharedText)
                 }
-                "getSharedFile" -> {
-                    if (sharedFileUri != null) {
-                        result.success(buildSharedFileResult(sharedFileUri!!))
-                    } else {
-                        result.success(null)
-                    }
+                "getSharedFiles" -> {
+                    result.success(sharedFileUris.map(::buildSharedFileResult))
                 }
                 else -> result.notImplemented()
             }
@@ -90,16 +102,22 @@ class TileActionActivity : FlutterActivity() {
 
     /**
      * 返回分享文件的 uri 元数据。
+     *
+     * @param uri 分享文件的 content uri。
+     * @return Flutter 可读取的文件名和 uri。
      */
     private fun buildSharedFileResult(uri: Uri): Map<String, Any> {
         return mapOf(
-            "filename" to (sharedFileName ?: "shared_file"),
+            "filename" to getFileNameFromUri(uri),
             "uri" to uri.toString()
         )
     }
 
     /**
      * 从 content uri 获取展示文件名。
+     *
+     * @param uri 分享文件的 content uri。
+     * @return content provider 提供的文件名，无法获取时返回兜底名称。
      */
     private fun getFileNameFromUri(uri: Uri): String {
         var name = "shared_file"
