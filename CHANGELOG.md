@@ -2,6 +2,11 @@
 
 # SyncClipboard Flutter 更新日志
 ## [Unreleased]
+
+### Added
+
+- 支持多文件上传（一直忘记发版了，抱歉...）
+
 ## [0.3.4] - 2026-07-09
 
 ### Fixed
