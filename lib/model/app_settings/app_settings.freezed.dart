@@ -23,7 +23,9 @@ mixin _$AppSettings {
 /// 用户点击"我知道了"后设为 true，后续不再显示
  bool get manualUploadDialogShown;/// Download 下的相对保存目录
 /// 例如 A/B/C，最终保存到 /Download/A/B/C
- String get downloadRelativePath;/// 日志查看页默认选中的日志级别
+ String get downloadRelativePath;/// 下载完成后询问是否打开
+/// 开启后，下载到链接或文件时显示"打开"按钮，由用户决定是否跳转
+ bool get askOpenAfterDownload;/// 日志查看页默认选中的日志级别
  String get logViewLevelFilter;/// 被忽略的更新版本号
 /// 用户点击"忽略该版本"后设置，该版本将不再提示更新
 /// 当有新版本发布时，会自动清除该设置
@@ -40,16 +42,16 @@ $AppSettingsCopyWith<AppSettings> get copyWith => _$AppSettingsCopyWithImpl<AppS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.askOpenAfterDownload, askOpenAfterDownload) || other.askOpenAfterDownload == askOpenAfterDownload)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,logViewLevelFilter,ignoredVersion);
+int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,askOpenAfterDownload,logViewLevelFilter,ignoredVersion);
 
 @override
 String toString() {
-  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, logViewLevelFilter: $logViewLevelFilter, ignoredVersion: $ignoredVersion)';
+  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, askOpenAfterDownload: $askOpenAfterDownload, logViewLevelFilter: $logViewLevelFilter, ignoredVersion: $ignoredVersion)';
 }
 
 
@@ -60,7 +62,7 @@ abstract mixin class $AppSettingsCopyWith<$Res>  {
   factory $AppSettingsCopyWith(AppSettings value, $Res Function(AppSettings) _then) = _$AppSettingsCopyWithImpl;
 @useResult
 $Res call({
- bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, String logViewLevelFilter, String? ignoredVersion
+ bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, bool askOpenAfterDownload, String logViewLevelFilter, String? ignoredVersion
 });
 
 
@@ -77,13 +79,14 @@ class _$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? logViewLevelFilter = null,Object? ignoredVersion = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? askOpenAfterDownload = null,Object? logViewLevelFilter = null,Object? ignoredVersion = freezed,}) {
   return _then(_self.copyWith(
 trustInsecureCert: null == trustInsecureCert ? _self.trustInsecureCert : trustInsecureCert // ignore: cast_nullable_to_non_nullable
 as bool,autoCheckUpdate: null == autoCheckUpdate ? _self.autoCheckUpdate : autoCheckUpdate // ignore: cast_nullable_to_non_nullable
 as bool,manualUploadDialogShown: null == manualUploadDialogShown ? _self.manualUploadDialogShown : manualUploadDialogShown // ignore: cast_nullable_to_non_nullable
 as bool,downloadRelativePath: null == downloadRelativePath ? _self.downloadRelativePath : downloadRelativePath // ignore: cast_nullable_to_non_nullable
-as String,logViewLevelFilter: null == logViewLevelFilter ? _self.logViewLevelFilter : logViewLevelFilter // ignore: cast_nullable_to_non_nullable
+as String,askOpenAfterDownload: null == askOpenAfterDownload ? _self.askOpenAfterDownload : askOpenAfterDownload // ignore: cast_nullable_to_non_nullable
+as bool,logViewLevelFilter: null == logViewLevelFilter ? _self.logViewLevelFilter : logViewLevelFilter // ignore: cast_nullable_to_non_nullable
 as String,ignoredVersion: freezed == ignoredVersion ? _self.ignoredVersion : ignoredVersion // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -170,10 +173,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  String? ignoredVersion)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  bool askOpenAfterDownload,  String logViewLevelFilter,  String? ignoredVersion)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.ignoredVersion);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.askOpenAfterDownload,_that.logViewLevelFilter,_that.ignoredVersion);case _:
   return orElse();
 
 }
@@ -191,10 +194,10 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  String? ignoredVersion)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  bool askOpenAfterDownload,  String logViewLevelFilter,  String? ignoredVersion)  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings():
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.ignoredVersion);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.askOpenAfterDownload,_that.logViewLevelFilter,_that.ignoredVersion);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +214,10 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  String logViewLevelFilter,  String? ignoredVersion)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool trustInsecureCert,  bool autoCheckUpdate,  bool manualUploadDialogShown,  String downloadRelativePath,  bool askOpenAfterDownload,  String logViewLevelFilter,  String? ignoredVersion)?  $default,) {final _that = this;
 switch (_that) {
 case _AppSettings() when $default != null:
-return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.logViewLevelFilter,_that.ignoredVersion);case _:
+return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUploadDialogShown,_that.downloadRelativePath,_that.askOpenAfterDownload,_that.logViewLevelFilter,_that.ignoredVersion);case _:
   return null;
 
 }
@@ -226,7 +229,7 @@ return $default(_that.trustInsecureCert,_that.autoCheckUpdate,_that.manualUpload
 @JsonSerializable()
 
 class _AppSettings implements AppSettings {
-  const _AppSettings({this.trustInsecureCert = false, this.autoCheckUpdate = true, this.manualUploadDialogShown = false, this.downloadRelativePath = '', this.logViewLevelFilter = 'info', this.ignoredVersion});
+  const _AppSettings({this.trustInsecureCert = false, this.autoCheckUpdate = true, this.manualUploadDialogShown = false, this.downloadRelativePath = '', this.askOpenAfterDownload = false, this.logViewLevelFilter = 'info', this.ignoredVersion});
   factory _AppSettings.fromJson(Map<String, dynamic> json) => _$AppSettingsFromJson(json);
 
 /// 是否信任不安全的 HTTPS 证书
@@ -241,6 +244,9 @@ class _AppSettings implements AppSettings {
 /// Download 下的相对保存目录
 /// 例如 A/B/C，最终保存到 /Download/A/B/C
 @override@JsonKey() final  String downloadRelativePath;
+/// 下载完成后询问是否打开
+/// 开启后，下载到链接或文件时显示"打开"按钮，由用户决定是否跳转
+@override@JsonKey() final  bool askOpenAfterDownload;
 /// 日志查看页默认选中的日志级别
 @override@JsonKey() final  String logViewLevelFilter;
 /// 被忽略的更新版本号
@@ -261,16 +267,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppSettings&&(identical(other.trustInsecureCert, trustInsecureCert) || other.trustInsecureCert == trustInsecureCert)&&(identical(other.autoCheckUpdate, autoCheckUpdate) || other.autoCheckUpdate == autoCheckUpdate)&&(identical(other.manualUploadDialogShown, manualUploadDialogShown) || other.manualUploadDialogShown == manualUploadDialogShown)&&(identical(other.downloadRelativePath, downloadRelativePath) || other.downloadRelativePath == downloadRelativePath)&&(identical(other.askOpenAfterDownload, askOpenAfterDownload) || other.askOpenAfterDownload == askOpenAfterDownload)&&(identical(other.logViewLevelFilter, logViewLevelFilter) || other.logViewLevelFilter == logViewLevelFilter)&&(identical(other.ignoredVersion, ignoredVersion) || other.ignoredVersion == ignoredVersion));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,logViewLevelFilter,ignoredVersion);
+int get hashCode => Object.hash(runtimeType,trustInsecureCert,autoCheckUpdate,manualUploadDialogShown,downloadRelativePath,askOpenAfterDownload,logViewLevelFilter,ignoredVersion);
 
 @override
 String toString() {
-  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, logViewLevelFilter: $logViewLevelFilter, ignoredVersion: $ignoredVersion)';
+  return 'AppSettings(trustInsecureCert: $trustInsecureCert, autoCheckUpdate: $autoCheckUpdate, manualUploadDialogShown: $manualUploadDialogShown, downloadRelativePath: $downloadRelativePath, askOpenAfterDownload: $askOpenAfterDownload, logViewLevelFilter: $logViewLevelFilter, ignoredVersion: $ignoredVersion)';
 }
 
 
@@ -281,7 +287,7 @@ abstract mixin class _$AppSettingsCopyWith<$Res> implements $AppSettingsCopyWith
   factory _$AppSettingsCopyWith(_AppSettings value, $Res Function(_AppSettings) _then) = __$AppSettingsCopyWithImpl;
 @override @useResult
 $Res call({
- bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, String logViewLevelFilter, String? ignoredVersion
+ bool trustInsecureCert, bool autoCheckUpdate, bool manualUploadDialogShown, String downloadRelativePath, bool askOpenAfterDownload, String logViewLevelFilter, String? ignoredVersion
 });
 
 
@@ -298,13 +304,14 @@ class __$AppSettingsCopyWithImpl<$Res>
 
 /// Create a copy of AppSettings
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? logViewLevelFilter = null,Object? ignoredVersion = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? trustInsecureCert = null,Object? autoCheckUpdate = null,Object? manualUploadDialogShown = null,Object? downloadRelativePath = null,Object? askOpenAfterDownload = null,Object? logViewLevelFilter = null,Object? ignoredVersion = freezed,}) {
   return _then(_AppSettings(
 trustInsecureCert: null == trustInsecureCert ? _self.trustInsecureCert : trustInsecureCert // ignore: cast_nullable_to_non_nullable
 as bool,autoCheckUpdate: null == autoCheckUpdate ? _self.autoCheckUpdate : autoCheckUpdate // ignore: cast_nullable_to_non_nullable
 as bool,manualUploadDialogShown: null == manualUploadDialogShown ? _self.manualUploadDialogShown : manualUploadDialogShown // ignore: cast_nullable_to_non_nullable
 as bool,downloadRelativePath: null == downloadRelativePath ? _self.downloadRelativePath : downloadRelativePath // ignore: cast_nullable_to_non_nullable
-as String,logViewLevelFilter: null == logViewLevelFilter ? _self.logViewLevelFilter : logViewLevelFilter // ignore: cast_nullable_to_non_nullable
+as String,askOpenAfterDownload: null == askOpenAfterDownload ? _self.askOpenAfterDownload : askOpenAfterDownload // ignore: cast_nullable_to_non_nullable
+as bool,logViewLevelFilter: null == logViewLevelFilter ? _self.logViewLevelFilter : logViewLevelFilter // ignore: cast_nullable_to_non_nullable
 as String,ignoredVersion: freezed == ignoredVersion ? _self.ignoredVersion : ignoredVersion // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

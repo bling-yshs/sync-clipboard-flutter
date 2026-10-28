@@ -8,5 +8,6 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         DownloadsSaveChannel.register(flutterEngine, this)
         WifiInfoChannel.register(flutterEngine, this)
+        ExternalOpenChannel.register(flutterEngine, this)
     }
 }

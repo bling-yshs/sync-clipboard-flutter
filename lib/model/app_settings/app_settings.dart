@@ -31,6 +31,10 @@ abstract class AppSettings with _$AppSettings {
     /// 例如 A/B/C，最终保存到 /Download/A/B/C
     @Default('') String downloadRelativePath,
 
+    /// 下载完成后询问是否打开
+    /// 开启后，下载到链接或文件时显示"打开"按钮，由用户决定是否跳转
+    @Default(false) bool askOpenAfterDownload,
+
     /// 日志查看页默认选中的日志级别
     @Default('info') String logViewLevelFilter,
 

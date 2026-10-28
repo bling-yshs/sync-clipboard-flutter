@@ -4,12 +4,15 @@ import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sync_clipboard_flutter/dio/sync_clipboard_client.dart';
+import 'package:sync_clipboard_flutter/model/app_settings/app_settings.dart';
 import 'package:sync_clipboard_flutter/model/clipboard/clipboard.dart'
     as clipboard_model;
 import 'package:sync_clipboard_flutter/service/app_logger.dart';
 import 'package:sync_clipboard_flutter/service/clipboard_upload_service.dart';
 import 'package:sync_clipboard_flutter/service/downloads_save_service.dart';
+import 'package:sync_clipboard_flutter/service/external_open_service.dart';
 
 /// 磁贴透明页面 - 上传剪贴板
 class TileUploadPage extends StatefulWidget {
@@ -115,15 +118,67 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
   double _downloadProgress = 0.0;
   bool _showProgress = false;
 
+  /// 下载完成后等待用户选择的打开操作，为 null 时不显示按钮
+  _OpenAction? _openAction;
+
   @override
   void initState() {
     super.initState();
     _downloadClipboard();
   }
 
+  Future<bool> _loadAskOpenAfterDownload() async {
+    final prefs = await SharedPreferences.getInstance();
+    final settingsJson = prefs.getString('app_settings');
+    final settings = settingsJson != null
+        ? appSettingsFromJson(settingsJson)
+        : const AppSettings();
+    return settings.askOpenAfterDownload;
+  }
+
+  /// 停留在完成状态，由用户选择关闭或打开
+  void _showOpenAction({required String message, required _OpenAction action}) {
+    setState(() {
+      _message = message;
+      _isDownloading = false;
+      _showProgress = false;
+      _openAction = action;
+    });
+  }
+
+  Future<void> _performOpenAction() async {
+    final action = _openAction;
+    if (action == null) {
+      return;
+    }
+
+    try {
+      final opened = await action.open();
+      if (opened) {
+        _log.i('已执行打开操作: ${action.label}');
+        SystemNavigator.pop();
+        return;
+      }
+      _log.w('没有可用应用执行打开操作: ${action.label}');
+      setState(() {
+        _message = '$_message\n\n未找到可以打开的应用';
+        _hasError = true;
+        _openAction = null;
+      });
+    } catch (e) {
+      _log.e('打开失败', error: e, stackTrace: StackTrace.current);
+      setState(() {
+        _message = '打开失败：$e';
+        _hasError = true;
+        _openAction = null;
+      });
+    }
+  }
+
   Future<void> _downloadClipboard() async {
     try {
       _log.i('开始下载剪贴板...');
+      final askOpen = await _loadAskOpenAfterDownload();
 
       // 1. 从服务器获取剪贴板数据
       final client = await SyncClipboardClient.create();
@@ -150,6 +205,24 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 
           await Clipboard.setData(ClipboardData(text: resolvedText));
           _log.i('已将文本写入系统剪贴板');
+
+          final url = askOpen
+              ? ExternalOpenService.extractSingleUrl(resolvedText)
+              : null;
+          if (url != null) {
+            // 链接过长时只展示前一部分，避免卡片超出屏幕
+            final displayUrl = url.length > 200
+                ? '${url.substring(0, 200)}...'
+                : url;
+            _showOpenAction(
+              message: '已复制链接\n$displayUrl',
+              action: _OpenAction(
+                label: '打开链接',
+                open: () => ExternalOpenService.openUrl(url),
+              ),
+            );
+            break;
+          }
 
           // 显示成功提示并立即退出
           Fluttertoast.showToast(msg: '已将以下内容写入剪贴版:\n$resolvedText');
@@ -196,6 +269,21 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
           );
           final savedName = saved.displayName ?? filename;
           _log.i('文件已下载到 ${saved.path}: $savedName, uri: ${saved.uri}');
+
+          // Android 9 及以下返回 file uri，无法交给其他应用打开
+          final savedUri = saved.uri;
+          if (askOpen &&
+              savedUri != null &&
+              ExternalOpenService.isContentUri(savedUri)) {
+            _showOpenAction(
+              message: '文件已下载到 ${saved.path}\n$savedName',
+              action: _OpenAction(
+                label: '打开文件',
+                open: () => ExternalOpenService.openFile(savedUri),
+              ),
+            );
+            break;
+          }
 
           // 显示成功提示并立即退出
           Fluttertoast.showToast(msg: '文件已下载到 ${saved.path}\n$savedName');
@@ -290,14 +378,44 @@ class _TileDownloadPageState extends State<TileDownloadPage> {
 
   @override
   Widget build(BuildContext context) {
+    final openAction = _openAction;
     return _TileOverlayPage(
       message: _message,
-      icon: _hasError ? Icons.error : Icons.download,
+      icon: _hasError
+          ? Icons.error
+          : openAction != null
+          ? Icons.check_circle
+          : Icons.download,
       isLoading: _isDownloading,
       downloadProgress: _showProgress ? _downloadProgress : null,
       iconColor: _hasError ? Colors.red : Colors.white,
+      actions: openAction == null
+          ? null
+          : [
+              TextButton(
+                onPressed: () => SystemNavigator.pop(),
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                child: const Text('关闭'),
+              ),
+              FilledButton(
+                onPressed: _performOpenAction,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                ),
+                child: Text(openAction.label),
+              ),
+            ],
     );
   }
+}
+
+/// 下载完成后可供用户选择的打开操作
+class _OpenAction {
+  final String label;
+  final Future<bool> Function() open;
+
+  const _OpenAction({required this.label, required this.open});
 }
 
 /// 磁贴透明页面的通用实现
@@ -310,12 +428,16 @@ class _TileOverlayPage extends StatelessWidget {
   final double? downloadProgress;
   final Color iconColor;
 
+  /// 卡片底部的操作按钮，为 null 时显示"点击空白处关闭"提示
+  final List<Widget>? actions;
+
   const _TileOverlayPage({
     required this.message,
     required this.icon,
     this.isLoading = false,
     this.downloadProgress,
     this.iconColor = Colors.white,
+    this.actions,
   });
 
   @override
@@ -404,8 +526,19 @@ class _TileOverlayPage extends StatelessWidget {
                       ),
                     ],
 
+                    // 操作按钮
+                    if (!isLoading && actions != null) ...[
+                      const SizedBox(height: 20),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
+                        children: actions!,
+                      ),
+                    ],
+
                     // 提示文本
-                    if (!isLoading) ...[
+                    if (!isLoading && actions == null) ...[
                       const SizedBox(height: 16),
                       Text(
                         '点击空白处关闭',
