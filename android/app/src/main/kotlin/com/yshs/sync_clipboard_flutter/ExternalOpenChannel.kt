@@ -55,15 +55,20 @@ object ExternalOpenChannel {
     /**
      * 按文件 MIME 类型交给系统选择应用打开。
      *
+     * 图片每次都弹出"打开方式"，不走默认相册；其他文件有默认应用时直接打开。
      * 只支持 content uri；file uri 交给其他应用会触发 FileUriExposedException。
      */
     private fun openFile(context: Context, uri: Uri): Boolean {
         if (uri.scheme != ContentResolver.SCHEME_CONTENT) {
             return false
         }
+        val mimeType = resolveMimeType(context, uri)
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, resolveMimeType(context, uri))
+            setDataAndType(uri, mimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        if (mimeType.startsWith("image/")) {
+            return startActivity(context, Intent.createChooser(intent, "选择打开方式"))
         }
         return startActivity(context, intent)
     }
