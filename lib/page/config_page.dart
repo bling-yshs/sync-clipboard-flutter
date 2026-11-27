@@ -96,6 +96,11 @@ class _ConfigPageState extends State<ConfigPage> {
     await _saveSettings(newSettings);
   }
 
+  Future<void> _toggleAskOpenAfterDownload(bool value) async {
+    final newSettings = _settings.copyWith(askOpenAfterDownload: value);
+    await _saveSettings(newSettings);
+  }
+
   String get _downloadPathLabel {
     if (_downloadPathError != null) {
       return '路径格式无效';
@@ -184,6 +189,15 @@ class _ConfigPageState extends State<ConfigPage> {
           subtitle: const Text('关闭后将不会在启动时自动检查更新'),
           value: _settings.autoCheckUpdate,
           onChanged: _toggleAutoCheckUpdate,
+        ),
+
+        // 下载后询问是否打开
+        SwitchListTile(
+          secondary: const Icon(Icons.open_in_new),
+          title: const Text('下载后询问是否打开'),
+          subtitle: const Text('下载到链接或文件时，可选择用浏览器或对应应用打开'),
+          value: _settings.askOpenAfterDownload,
+          onChanged: _toggleAskOpenAfterDownload,
         ),
         ListTile(
           leading: const Icon(Icons.folder_outlined),

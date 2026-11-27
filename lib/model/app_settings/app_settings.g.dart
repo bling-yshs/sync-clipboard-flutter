@@ -11,6 +11,7 @@ _AppSettings _$AppSettingsFromJson(Map<String, dynamic> json) => _AppSettings(
   autoCheckUpdate: json['autoCheckUpdate'] as bool? ?? true,
   manualUploadDialogShown: json['manualUploadDialogShown'] as bool? ?? false,
   downloadRelativePath: json['downloadRelativePath'] as String? ?? '',
+  askOpenAfterDownload: json['askOpenAfterDownload'] as bool? ?? false,
   logViewLevelFilter: json['logViewLevelFilter'] as String? ?? 'info',
   ignoredVersion: json['ignoredVersion'] as String?,
 );
@@ -21,6 +22,7 @@ Map<String, dynamic> _$AppSettingsToJson(_AppSettings instance) =>
       'autoCheckUpdate': instance.autoCheckUpdate,
       'manualUploadDialogShown': instance.manualUploadDialogShown,
       'downloadRelativePath': instance.downloadRelativePath,
+      'askOpenAfterDownload': instance.askOpenAfterDownload,
       'logViewLevelFilter': instance.logViewLevelFilter,
       'ignoredVersion': instance.ignoredVersion,
     };

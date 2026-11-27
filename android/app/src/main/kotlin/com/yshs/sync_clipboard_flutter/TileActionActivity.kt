@@ -77,7 +77,7 @@ class TileActionActivity : FlutterActivity() {
     }
 
     /**
-     * 注册分享数据、下载保存和 Wi-Fi 信息平台通道。
+     * 注册分享数据、下载保存、外部打开和 Wi-Fi 信息平台通道。
      *
      * @param flutterEngine 当前 Activity 使用的 Flutter 引擎。
      */
@@ -85,6 +85,7 @@ class TileActionActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         DownloadsSaveChannel.register(flutterEngine, this)
         WifiInfoChannel.register(flutterEngine, this)
+        ExternalOpenChannel.register(flutterEngine, this)
 
         // 注册 MethodChannel 让 Flutter 获取分享数据
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
